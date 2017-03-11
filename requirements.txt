@@ -25,14 +25,14 @@ django-countries==4.1
 django-emailit==0.2.2
 django-materializecss-form==1.0.1
 django-mptt==0.8.7
-django-payments==0.11.0
+django-payments==0.11.0.3
 django-prices-openexchangerates==0.1.12
 django-prices==0.4.13
 django-redis==4.7.0
 django-storages==1.5.2
 django-versatileimagefield==1.6.2
 django-webpack-loader==0.4.1
-django==1.10.5
+django==1.10.6
 djangorestframework==3.5.3
 docutils==0.13.1          # via botocore
 elasticsearch==2.4.1
