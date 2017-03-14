@@ -11,8 +11,6 @@ from saleor.cart import utils
 from saleor.cart.models import Cart
 from saleor.checkout.core import Checkout
 from saleor.discount.models import Voucher, Sale
-from saleor.order.models import Order
-from saleor.discount.models import Voucher
 from saleor.order.models import Order, OrderedItem, DeliveryGroup
 from saleor.product.models import (AttributeChoiceValue, Category, Product,
                                    ProductAttribute, ProductClass,
@@ -210,6 +208,49 @@ def order_with_items(order, product_class):
         unit_price_gross=Decimal('30.00'),
     )
 
+    return order
+
+
+@pytest.fixture()
+def order_with_items_and_stock(order, product_class):
+    group = DeliveryGroup.objects.create(order=order)
+    product = Product.objects.create(
+        name='Test product', price=Decimal('10.00'),
+        product_class=product_class)
+    variant = ProductVariant.objects.create(product=product, sku='A')
+    warehouse = StockLocation.objects.create(name='Warehouse 1')
+    stock = Stock.objects.create(
+        variant=variant, cost_price=1, quantity=5, quantity_allocated=3,
+        location=warehouse)
+    OrderedItem.objects.create(
+        delivery_group=group,
+        product=product,
+        product_name=product.name,
+        product_sku='SKU_%d' % (product.pk,),
+        quantity=3,
+        unit_price_net=Decimal('30.00'),
+        unit_price_gross=Decimal('30.00'),
+        stock=stock
+    )
+    product = Product.objects.create(
+        name='Test product 2', price=Decimal('20.00'),
+        product_class=product_class)
+    variant = ProductVariant.objects.create(product=product, sku='B')
+    stock = Stock.objects.create(
+        variant=variant, cost_price=2, quantity=2, quantity_allocated=2,
+        location=warehouse)
+    OrderedItem.objects.create(
+        delivery_group=group,
+        product=product,
+        product_name=product.name,
+        product_sku='SKU_%d' % (product.pk,),
+        quantity=2,
+        unit_price_net=Decimal('20.00'),
+        unit_price_gross=Decimal('20.00'),
+        stock=stock
+    )
+    Order.objects.recalculate_order(order)
+    order.refresh_from_db()
     return order
 
 

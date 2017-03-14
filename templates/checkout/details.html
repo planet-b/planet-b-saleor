@@ -14,7 +14,7 @@
       <div class="container">
         <a href="/">
           <img src="{% static "images/saleor-logo-black.svg" %}"
-               alt="{% trans "Testeor - Saleor demo store" context "Checkout logo alternate text" %}"
+               alt="{% trans "Saleor demo store" context "Checkout logo alternate text" %}"
                height="38">
         </a>
         <h1>{% trans "Checkout" context "Checkout title" %}</h1>
@@ -71,7 +71,7 @@
                 <h3>{% trans "Total" context "Order review section title" %}</h3>
               </div>
               <div class="col-4">
-                <h3 class="float-right">{% gross total %}</h3>
+                <h3 class="float-right">{% gross total html=True %}</h3>
               </div>
             </div>
           </div>

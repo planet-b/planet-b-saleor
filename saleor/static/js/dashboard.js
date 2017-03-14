@@ -6,6 +6,20 @@ import Sortable from 'sortablejs';
 
 import '../scss/dashboard/dashboard.scss';
 
+var supportsPassive = false;
+try {
+  var opts = Object.defineProperty({}, 'passive', {
+    get: function() {
+      supportsPassive = true;
+    }
+  });
+  window.addEventListener('test', null, opts);
+} catch (e) {}
+
+function onScroll(func) {
+  window.addEventListener('scroll', func, supportsPassive ? {passive: true} : false);
+}
+
 function openModal() {
   $('.modal-trigger-custom').on('click', function (e) {
     let that = this;
@@ -25,74 +39,22 @@ function openModal() {
 }
 
 $(document).ready(function() {
-  let tabletScreen = 990;
-  let wideScreen = 1650;
-  let navWidth = '250px';
-  let $mainNav = $('#main-nav');
-  let mainNavTop = $mainNav.offset().top;
-  let $closeMenu = $('#close-menu');
-  let $openMenu = $('#open-menu');
-  function openMenu(animationSpeed) {
-    $mainNav.animate({
-      'left': navWidth
-    }, animationSpeed);
-    if ($(window).width() < wideScreen && $(window).width() >= tabletScreen) {
-      $('main .container, .subheader .nav-wrapper').animate({
-        'marginLeft': navWidth
-      }, animationSpeed);
-    }
-    $openMenu.addClass('hide');
-    $closeMenu.removeClass('hide');
-    $(window).scroll(function() {
-      $mainNav.toggleClass('sticky', $(window).scrollTop() > mainNavTop);
-    });
-    if ($(window).width() > tabletScreen) {
-      $.cookie('menu', 'open', { path: '/' });
-    }
+  let mainNavTop = $('.side-nav').offset().top;
+  let $toggleMenu = $('#toggle-menu');
+  function toggleMenu(e) {
+    $(document.body).toggleClass('nav-toggled');
+    e.preventDefault();
   }
-  function closeMenu() {
-    $mainNav.animate({
-      'left': '0'
-    });
-    $closeMenu.addClass('hide');
-    $openMenu.removeClass('hide');
-    $.removeCookie('menu', { path: '/' });
-    if ($(window).width() < wideScreen) {
-      $('main .container, .subheader .nav-wrapper').css({
-        'margin-left': 'auto'
-      });
-    }
-  }
-  $openMenu.click(function() {
-    openMenu(400);
+  $toggleMenu.click(toggleMenu);
+  onScroll(function() {
+    $(document.body).toggleClass('sticky-nav', Math.floor($(window).scrollTop()) > Math.ceil(mainNavTop));
   });
-  $closeMenu.click(function() {
-    closeMenu();
-  });
-  if ($(window).width() <= tabletScreen) {
-    $(window).click(function() {
-      closeMenu();
-    });
-    $openMenu.click(function(event) {
-      event.stopPropagation();
-    });
-  }
-  if ($.cookie('menu') === 'open') {
-    openMenu(0);
-  } else {
-    closeMenu();
-  }
   initSelects();
   $('.modal').modal();
-
-  if (isTablet()) {
-    $('.equal-height-on-med').matchHeight();
-  }
 
   let $tabs = $('ul.tabs');
   if ($tabs.length) {
     $tabs.find('.tab').on('click', function (e) {
-      window.history.pushState(null, null, e.target.hash);
       let tabSelector = $(this).find('a').attr('href');
       $('.btn-fab').addClass('btn-fab-hidden');
       $(tabSelector + '-btn').removeClass('btn-fab-hidden');
@@ -158,12 +120,10 @@ Dropzone.options.productImageForm = {
   previewTemplate: $('#template').html(),
   clickable: false,
   init: function() {
-    let $dropzoneGhost = $('.dropzone-ghost');
+    let $dropzoneMessage = $('.dropzone-message');
     let $gallery = $('.product-gallery');
 
-    this.on('complete', function() {
-      $dropzoneGhost.remove().appendTo($gallery);
-    }).on('success', function(e, response) {
+    this.on('success', function(e, response) {
       $(e.previewElement).find('.product-gallery-item-desc').html(response.image);
       $(e.previewElement).attr('data-id', response.id);
       let editLinkHref = $(e.previewElement).find('.card-action-edit').attr('href');
@@ -227,6 +187,26 @@ $('.switch-actions').on('change', function() {
   }
 });
 $('.datepicker').pickadate({
+  // The title label to use for the month nav buttons
+  labelMonthNext: gettext('Next month'),
+  labelMonthPrev: gettext('Previous month'),
+
+  // The title label to use for the dropdown selectors
+  labelMonthSelect: gettext('Select a month'),
+  labelYearSelect: gettext('Select a year'),
+
+  // Months and weekdays
+  monthsFull: [ gettext('January'), gettext('February'), gettext('March'), gettext('April'), gettext('May'), gettext('June'), gettext('July'), gettext('August'), gettext('September'), gettext('October'), gettext('November'), gettext('December') ],
+  monthsShort: [ gettext('Jan'), gettext('Feb'), gettext('Mar'), gettext('Apr'), gettext('May'), gettext('Jun'), gettext('Jul'), gettext('Aug'), gettext('Sep'), gettext('Oct'), gettext('Nov'), gettext('Dec') ],
+  weekdaysFull: [ gettext('Sunday'), gettext('Monday'), gettext('Tuesday'), gettext('Wednesday'), gettext('Thursday'), gettext('Friday'), gettext('Saturday') ],
+  weekdaysShort: [ gettext('Sun'), gettext('Mon'), gettext('Tue'), gettext('Wed'), gettext('Thu'), gettext('Fri'), gettext('Sat') ],
+
+  // Materialize modified
+  weekdaysLetter: [ gettext('S'), gettext('M'), gettext('T'), gettext('W'), gettext('T'), gettext('F'), gettext('S') ],
+  today: gettext('Today'),
+  clear: gettext('Clear'),
+  close: gettext('Clear'),
+  
   format: 'd mmmm yyyy',
   formatSubmit: 'yyyy-mm-dd',
   selectMonths: true,
@@ -235,10 +215,16 @@ $('.datepicker').pickadate({
     $(document.activeElement).blur();
   }
 });
+
 function initSelects() {
   $('select:not(.browser-default):not([multiple])').material_select();
-  $('select[multiple]:not(.browser-default)').select2();
+  $('select[multiple]:not(.browser-default)').select2({width: '100%'});
 }
+// Clickable rows in dashboard tables
+$(document).on('click', 'tr[data-action-go]>td:not(.ignore-link)', function() {
+  let target = $(this).parent();
+  window.location.href = target.data('action-go');
+});
 
 // Coupon dynamic forms
 $(document).ready(() => {
