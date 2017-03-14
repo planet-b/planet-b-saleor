@@ -32,21 +32,10 @@ if os.environ.get('REDIS_URL'):
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': os.environ.get('REDIS_URL')}
 
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default='postgres://saleor:saleor@localhost:5432/saleor',
-#         conn_max_age=600)}
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'Aasdw2adsa',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    },
-}
+    'default': dj_database_url.config(
+        default='postgres://upjefooikfkyvq:429a44e806dd105fca2e822b21d0aae5e0f4783f3349f363278f382350aa57f7@ec2-107-20-193-74.compute-1.amazonaws.com:5432/d4pkonou6990k3',
+        conn_max_age=600)}
 
 
 TIME_ZONE = 'America/Vancouver'
@@ -127,8 +116,7 @@ TEMPLATES = [{
         'string_if_invalid': '<< MISSING VARIABLE "%s" >>' if DEBUG else ''}}]
 
 # Make this unique, and don't share it with anybody.
-# SECRET_KEY = os.environ.get('SECRET_KEY')
-SECRET_KEY = 'nAsUSA2eW2AGa4RE-rEQ47!$Ra&Aqu'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 MIDDLEWARE_CLASSES = [
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -291,8 +279,7 @@ BOOTSTRAP3 = {
 
 TEST_RUNNER = ''
 
-# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split()
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split()
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
