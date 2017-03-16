@@ -75,7 +75,7 @@ AWS_QUERYSTRING_AUTH = ast.literal_eval(
     os.environ.get('AWS_QUERYSTRING_AUTH', 'False'))
 
 if AWS_STORAGE_BUCKET_NAME:
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3BotoStorage'
 
 if AWS_MEDIA_BUCKET_NAME:
     DEFAULT_FILE_STORAGE = 'saleor.core.storages.S3MediaStorage'
@@ -86,18 +86,14 @@ MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
 MEDIA_URL = '/media/'
 
 STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
-AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-# STATIC_URL = '/static/'
-STATIC_URL = "https://%s/" % AWS_S3_CUSTOM_DOMAIN
+STATIC_URL = '/static/'
 
-# STATICFILES_DIRS = [
-#     ('assets', os.path.join(PROJECT_ROOT, 'saleor', 'static', 'assets')),
-#     ('images', os.path.join(PROJECT_ROOT, 'saleor', 'static', 'images'))
-# ]
+# AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+# STATIC_URL = "https://%s/" % AWS_S3_CUSTOM_DOMAIN
 
 STATICFILES_DIRS = [
-    ('assets', os.path.join(PROJECT_ROOT, 'static', 'assets')),
-    ('images', os.path.join(PROJECT_ROOT, 'static', 'images'))
+    ('assets', os.path.join(PROJECT_ROOT, 'saleor', 'static', 'assets')),
+    ('images', os.path.join(PROJECT_ROOT, 'saleor', 'static', 'images'))
 ]
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
