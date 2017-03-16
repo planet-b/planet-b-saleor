@@ -20,7 +20,7 @@ ROOT_URLCONF = 'saleor.urls'
 WSGI_APPLICATION = 'saleor.wsgi.application'
 
 ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
+    ('Duy Pham', 'duy.phamthe91@gmail.com'),
 )
 MANAGERS = ADMINS
 INTERNAL_IPS = os.environ.get('INTERNAL_IPS', '127.0.0.1').split()
@@ -66,36 +66,15 @@ EMAIL_USE_SSL = email_config['EMAIL_USE_SSL']
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 ORDER_FROM_EMAIL = os.getenv('ORDER_FROM_EMAIL', DEFAULT_FROM_EMAIL)
 
-# Amazon S3 configuration
-AWS_HEADERS = {  # see http://developer.yahoo.com/performance/rules.html#expires
-    'Expires': 'Thu, 31 Dec 2099 20:00:00 GMT',
-    'Cache-Control': 'max-age=94608000',
-}
-
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
-AWS_MEDIA_BUCKET_NAME = os.environ.get('AWS_MEDIA_BUCKET_NAME')
-
-AWS_QUERYSTRING_AUTH = ast.literal_eval(
-    os.environ.get('AWS_QUERYSTRING_AUTH', 'False'))
-
-if AWS_STORAGE_BUCKET_NAME or True:
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-if AWS_MEDIA_BUCKET_NAME:
-    DEFAULT_FILE_STORAGE = 'saleor.core.storages.S3MediaStorage'
-    THUMBNAIL_DEFAULT_STORAGE = DEFAULT_FILE_STORAGE
-
 # Media and Static storage
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
 MEDIA_URL = '/media/'
 
 STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
-# STATIC_URL = '/static/'
+STATIC_URL = '/static/'
 
-AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-STATIC_URL = "https://%s/" % AWS_S3_CUSTOM_DOMAIN
+# AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+# STATIC_URL = "https://%s/" % AWS_S3_CUSTOM_DOMAIN
 
 STATICFILES_DIRS = [
     ('assets', os.path.join(PROJECT_ROOT, 'saleor', 'static', 'assets')),
@@ -311,6 +290,24 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split()
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Amazon S3 configuration
+AWS_HEADERS = {  # see http://developer.yahoo.com/performance/rules.html#expires
+    'Expires': 'Thu, 31 Dec 2099 20:00:00 GMT',
+    'Cache-Control': 'max-age=94608000',
+}
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+AWS_MEDIA_BUCKET_NAME = os.environ.get('AWS_MEDIA_BUCKET_NAME')
+AWS_QUERYSTRING_AUTH = ast.literal_eval(
+    os.environ.get('AWS_QUERYSTRING_AUTH', 'False'))
+
+if AWS_STORAGE_BUCKET_NAME:
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+if AWS_MEDIA_BUCKET_NAME:
+    DEFAULT_FILE_STORAGE = 'saleor.core.storages.S3MediaStorage'
+    THUMBNAIL_DEFAULT_STORAGE = DEFAULT_FILE_STORAGE
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
