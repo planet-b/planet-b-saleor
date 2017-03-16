@@ -216,16 +216,8 @@ $countrySelect.on('change', (e) => {
   });
 });
 
-// Save tab links to URL
+// Open tab from the link
 
-$('.nav-tabs a').click((e) => {
-  e.preventDefault();
-  $(this).tab('show');
-});
-$('ul.nav-tabs li a:not(:first)').on('shown.bs.tab', (e) => {
-  let id = $(e.target).attr('href').substr(1);
-  window.location.hash = id;
-});
 let hash = window.location.hash;
 $('.nav-tabs a[href="' + hash + '"]').tab('show');
 
@@ -355,6 +347,19 @@ $cartLine.each(function() {
       }
     });
   });
+});
+
+// StyleGuide fixed menu
+
+$(document).ready(function() {
+  let styleGuideMenu = $('.styleguide__nav');
+  $(window).scroll(function () {
+    if ($(this).scrollTop() > 100) {
+      styleGuideMenu.addClass("fixed");
+    } else {
+      styleGuideMenu.removeClass("fixed");
+    }
+  })
 });
 
 if ($.cookie('alert') === 'true') {
