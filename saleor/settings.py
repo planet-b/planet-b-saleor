@@ -94,6 +94,7 @@ STATIC_URL = "https://%s/" % AWS_S3_CUSTOM_DOMAIN
 #     ('assets', os.path.join(PROJECT_ROOT, 'saleor', 'static', 'assets')),
 #     ('images', os.path.join(PROJECT_ROOT, 'saleor', 'static', 'images'))
 # ]
+
 STATICFILES_DIRS = [
     ('assets', os.path.join(PROJECT_ROOT, 'static', 'assets')),
     ('images', os.path.join(PROJECT_ROOT, 'static', 'images'))
