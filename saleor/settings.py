@@ -66,16 +66,12 @@ EMAIL_USE_SSL = email_config['EMAIL_USE_SSL']
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 ORDER_FROM_EMAIL = os.getenv('ORDER_FROM_EMAIL', DEFAULT_FROM_EMAIL)
 
-# Media and Static storage
+
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
 MEDIA_URL = '/media/'
 
 STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
-# STATIC_URL = '/static/'
-
-AWS_S3_CUSTOM_DOMAIN = '{0}.s3.amazonaws.com' . format(AWS_STORAGE_BUCKET_NAME)
-STATIC_URL = "https://%s/" % AWS_S3_CUSTOM_DOMAIN
-
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     ('assets', os.path.join(PROJECT_ROOT, 'saleor', 'static', 'assets')),
     ('images', os.path.join(PROJECT_ROOT, 'saleor', 'static', 'images'))
@@ -291,10 +287,6 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Amazon S3 configuration
-AWS_HEADERS = {  # see http://developer.yahoo.com/performance/rules.html#expires
-    'Expires': 'Thu, 31 Dec 2099 20:00:00 GMT',
-    'Cache-Control': 'max-age=94608000',
-}
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
