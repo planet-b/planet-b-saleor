@@ -1,5 +1,6 @@
 import React, { PropTypes } from 'react';
 import Relay from 'react-relay';
+import InlineSVG from 'react-inlinesvg';
 
 import SaleImg from '../../../images/sale_bg.svg';
 
@@ -9,10 +10,10 @@ const ProductPrice = ({ availability, price }) => {
   return (
     <div>
       <span itemProp="price">
-        {isPriceRange && <span>{gettext('from')} </span>} {priceRange.minPrice.grossLocalized}
+        {isPriceRange && <span>{pgettext('product price range', 'from')} </span>} {priceRange.minPrice.grossLocalized}
       </span>
       {discount && (
-        <div className="product-list__sale"><img src={SaleImg}/><span>{gettext('Sale')}</span></div>
+        <div className="product-list__sale"><InlineSVG src={SaleImg} /><span className="product-list__sale__text">{pgettext('Sale (discount) label for item in product list', 'Sale')}</span></div>
       )}
     </div>
   );

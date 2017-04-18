@@ -2,6 +2,7 @@
 .*
 !.slugignore
 !.babelrc
+!.codeclimate.yml
 !.coveragerc
 !.dockerignore
 !.flowconfig

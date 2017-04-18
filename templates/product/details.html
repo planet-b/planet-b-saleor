@@ -5,7 +5,7 @@
 {% load gross from prices_i18n %}
 {% load markdown from markdown %}
 {% load price_range from price_ranges %}
-{% load static from staticfiles %}
+{% load staticfiles %}
 {% load get_thumbnail from product_images %}
 
 {% block title %}{{ product }} — {{ block.super }}{% endblock %}
@@ -52,16 +52,16 @@
             </div>
             {% if images|length > 1 %}
               <a class="carousel-control-prev" href="#carousel-example-generic" role="button" data-slide="prev">
-                <img class="icon-next" src="{% static "images/gallery-arrow.svg" %}">
+                <svg data-src="{% static "images/gallery_arrow.svg" %}" />
               </a>
               <a class="carousel-control-next" href="#carousel-example-generic" role="button" data-slide="next">
-                <img class="icon-next" src="{% static "images/gallery-arrow.svg" %}">
+                <svg data-src="{% static "images/gallery_arrow.svg" %}" />
               </a>
             {% endif %}
             <ol class="carousel-indicators hidden-sm-down">
               {% for image in images %}
                 {% if images|length > 1 %}
-                  <li data-target="#carousel-example-generic" data-slide-to="{{ forloop.counter0 }}">
+                  <li data-target="#carousel-example-generic" data-slide-to="{{ forloop.counter0 }}"{% if forloop.first %} class="active"{% endif %}>
                     <img src="{% get_thumbnail image.image method="crop" size="60x60" %}" 
                          srcset="{% get_thumbnail image.image method="crop" size="60x60" %} 1x, {% get_thumbnail image.image method="crop" size="120x120" %} 2x" 
                          alt="">
@@ -112,7 +112,7 @@
             {% csrf_token %}
             <div id="variant-picker" data-variant-picker-data="{{ variant_picker_data }}" data-action="{% url 'product:add-to-cart' product_id=product.pk slug=product.get_slug %}"></div>
           {% else %}
-            <form id="product-form" role="form" class="product-form form-vertical" method="post"
+            <form id="product-form" role="form" class="product-form clearfix" method="post"
                   action="{% url 'product:add-to-cart' product_id=product.pk slug=product.get_slug %}" novalidate>
               {% csrf_token %}
               {% bootstrap_field form.variant %}

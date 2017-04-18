@@ -9,16 +9,17 @@ class ProductList extends Component {
   static propTypes = {
     onLoadMore: PropTypes.func.isRequired,
     products: PropTypes.object,
-    setSorting: PropTypes.object
+    setSorting: PropTypes.object,
+    updating: PropTypes.object
   };
 
   onLoadMore = () => this.props.onLoadMore();
   setSorting = (event) => this.props.setSorting(event);
 
   render() {
-    const { edges, pageInfo: { hasNextPage } } = this.props.products;
+    const { edges, pageInfo: { hasNextPage } } = this.props.products; 
     return (
-      <div>
+      <div className={this.props.updating && 'category-list--loading'}>
         <div className="row">
           {edges.length > 0 ? (edges.map((edge, i) => (
             <ProductItem key={i} product={edge.node} />
@@ -26,7 +27,7 @@ class ProductList extends Component {
         </div>
         <div className="load-more">
           {hasNextPage && (
-            <button className="btn gray" onClick={this.onLoadMore}>{gettext('Load more')}</button>
+            <button className="btn gray" onClick={this.onLoadMore}>{pgettext('Load more products on category view', 'Load more')}</button>
           )}
         </div>
       </div>

@@ -4,6 +4,7 @@
 {% load i18n %}
 {% load materializecss %}
 {% load status %}
+{% load staticfiles %}
 {% load discount_amount_for from prices %}
 
 {% block title %}
@@ -20,19 +21,23 @@
 {% endblock %}
 
 {% block header_extra %}
-  {% if order.can_cancel %}
-    <a class="dropdown-button right" href="#" data-activates="context-menu" data-constrainwidth="false">
-      <i class="material-icons">more_vert</i>
-    </a>
-    <ul id="context-menu" class="dropdown-content">
+  <a class="dropdown-button right" href="#" data-activates="context-menu" data-constrainwidth="false">
+    <svg data-src="{% static "dashboard/images/more_vert.svg" %}" height="24" width="24" />
+  </a>
+  <ul id="context-menu" class="dropdown-content">
+    {% if order.can_cancel %}
       <li>
-        <a href="#base-modal" data-href="{% url "dashboard:order-cancel" order_pk=order.pk %}"
-        class="modal-trigger-custom">
+        <a href="#base-modal" data-href="{% url "dashboard:order-cancel" order_pk=order.pk %}" class="modal-trigger-custom">
           {% trans "Cancel Order" context "Order detail action" %}
         </a>
       </li>
-    </ul>
-  {% endif %}
+    {% endif %}
+    <li>
+      <a class="btn-print" href="#">
+        {% trans "Print" context "Order detail action" %}
+      </a>
+    </li>
+  </ul>
 {% endblock %}
 
 {% block breadcrumbs %}
@@ -44,7 +49,7 @@
     </li>
     <li class="back-mobile">
       <a href="{% url "dashboard:orders" %}">
-        <i class="material-icons">arrow_back</i>
+        <svg data-src="{% static "dashboard/images/arrow_left.svg" %}" fill="#fff" width="20px" height="20px" />
       </a>
     </li>
     <li>
@@ -64,7 +69,7 @@
             <span>
               {% trans "Details" context "Order detail tab" %}
             </span>
-            <i class="material-icons">description</i>
+            <svg data-src="{% static "dashboard/images/description.svg" %}" />
           </a>
         </li>
         <li role="presentation" class="tab col s4">
@@ -72,7 +77,7 @@
             <span>
               {% trans "Payments" context "Order detail tab" %}
             </span>
-            <i class="material-icons">payment</i>
+            <svg data-src="{% static "dashboard/images/payment.svg" %}" />
           </a>
         </li>
         <li role="presentation" class="tab col s4">
@@ -80,7 +85,7 @@
             <span>
               {% trans "History" context "Order detail tab" %}
             </span>
-            <i class="material-icons">history</i>
+            <svg data-src="{% static "dashboard/images/history.svg" %}" />
           </a>
         </li>
       </ul>
@@ -201,7 +206,7 @@
       {% with order.shipping_address as address %}
         <div class="row">
           {% if address %}
-            <div class="col s12 m6 l12">
+            <div class="col s12 m6 l12 p6">
               <div class="card">
                 <div class="card-content">
                   <span class="card-title black-text">
@@ -217,7 +222,7 @@
               </div>
             </div>
           {% endif %}
-          <div class="col s12 {% if address %}m6{% else %}m12{% endif %} l12">
+          <div class="col s12 {% if address %}m6{% else %}m12{% endif %} l12 p6">
             <div class="card">
               <div class="card-content">
                 {% with order.billing_address as address %}
@@ -238,7 +243,7 @@
     </div>
     <div class="col s12 l8 switch-two-columns">
       {% for group in groups %}
-        <div class="card">
+        <div class="card shipment-table">
           <div class="data-table-header">
             <h5 class="data-table-title">
               {% blocktrans trimmed with shipment=group.id context "Shipment group table title"  %}
@@ -298,7 +303,7 @@
                         {% if group.status != 'cancelled' %}
                           <a class="dropdown-button" href="#" data-activates="line-actions-{{ item.pk }}" data-constrainwidth="false">
                             {{ item.quantity }}
-                            <i class="material-icons">arrow_drop_down</i>
+                            <svg data-src="{% static "dashboard/images/arrow_drop_down.svg" %}" width="24" height="24" />
                           </a>
                           <ul id="line-actions-{{ item.pk }}" class="dropdown-content">
                             <li>
@@ -390,7 +395,7 @@
                       {% blocktrans trimmed with voucher=order.discount_name context "Order totals header" %}
                         Voucher {{ voucher }}
                       {% endblocktrans %}
-                      <i class="material-icons">arrow_drop_down</i>
+                      <svg data-src="{% static "dashboard/images/arrow_drop_down.svg" %}" />
                     </a>
                     <ul id="voucher-actions" class="dropdown-content">
                       <li>
@@ -410,7 +415,7 @@
           </table>
         </div>
       </div>
-      <div class="card" id="order-notes">
+      <div class="card{% if not notes %} print-hide{% endif %}" id="order-notes">
         <div class="card-content">
           <span class="card-title black-text">
             {% trans "Order notes" context "Order notes card title" %}
@@ -440,6 +445,7 @@
   </div>
   <div class="tab-content" id="payment-history">
     {% if all_payments %}
+      <p class="print-show print-tabs">{% trans "Payments" context "Order detail tab" %}</p>
       <div class="card">
         <div class="data-table-container">
           <table class="bordered highlight responsive data-table">
@@ -495,6 +501,7 @@
     {% endif %}
   </div>
   <div class="card tab-content" id="order-history">
+    <p class="print-show print-tabs">{% trans "History" context "Order detail tab" %}</p>
     <div class="data-table-container">
       <table class="bordered highlight responsive data-table">
         <thead>
