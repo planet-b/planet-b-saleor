@@ -34,7 +34,7 @@ if os.environ.get('REDIS_URL'):
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgres://hxkkeosreduzkc:e2e4b1bbfa6591f75135b74b5d5f2912f1032092d8e741250358ae2457f5ed9a@ec2-54-83-25-217.compute-1.amazonaws.com:5432/d6b3nt9e4rnglq',
+        default=os.environ.get('DATABASE_URL'),
         conn_max_age=600)}
 
 
