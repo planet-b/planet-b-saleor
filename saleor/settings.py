@@ -20,7 +20,7 @@ ROOT_URLCONF = 'saleor.urls'
 WSGI_APPLICATION = 'saleor.wsgi.application'
 
 ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
+    ('Duy Pham', 'duy.phamthe91@gmail.com'),
 )
 MANAGERS = ADMINS
 INTERNAL_IPS = os.environ.get('INTERNAL_IPS', '127.0.0.1').split()
@@ -34,11 +34,11 @@ if os.environ.get('REDIS_URL'):
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgres://saleor:saleor@localhost:5432/saleor',
+        default='postgres://hxkkeosreduzkc:e2e4b1bbfa6591f75135b74b5d5f2912f1032092d8e741250358ae2457f5ed9a@ec2-54-83-25-217.compute-1.amazonaws.com:5432/d6b3nt9e4rnglq',
         conn_max_age=600)}
 
 
-TIME_ZONE = 'America/Chicago'
+TIME_ZONE = 'America/Vancouver'
 LANGUAGE_CODE = 'en-us'
 LOCALE_PATHS = [os.path.join(PROJECT_ROOT, 'locale')]
 USE_I18N = True
@@ -288,6 +288,10 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Amazon S3 configuration
+AWS_HEADERS = {
+    'Expires': 'Thu, 15 Apr 2010 20:00:00 GMT',
+    'Cache-Control': 'max-age=86400',
+}
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
@@ -404,7 +408,5 @@ SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
     'fields': 'id, email'}
 
 # Override production variables if DJANGO_DEVELOPMENT env variable is set
-if os.environ.get('DJANGO_DEVELOPMENT', 'true'):
-    from settings-staging import * 
-else:
-    from settings-production import * 
+if os.environ.get('DJANGO_DEVELOPMENT') is not None:
+    from .settings_dev import *
