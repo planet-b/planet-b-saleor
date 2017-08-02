@@ -26,6 +26,8 @@ dist/
 /node_modules/
 /static/
 /saleor/static/assets/
+/saleor/settings-production.py
+/saleor/settings-staging.py
 webpack-bundle.json
 *.mo
 
