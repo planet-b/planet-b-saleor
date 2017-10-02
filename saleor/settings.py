@@ -45,6 +45,7 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 EMAIL_URL = os.environ.get('EMAIL_URL')
 SENDGRID_USERNAME = os.environ.get('SENDGRID_USERNAME')
@@ -65,7 +66,6 @@ EMAIL_USE_SSL = email_config['EMAIL_USE_SSL']
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 ORDER_FROM_EMAIL = os.getenv('ORDER_FROM_EMAIL', DEFAULT_FROM_EMAIL)
-
 
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
 MEDIA_URL = '/media/'
@@ -150,6 +150,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.auth',
     'django.contrib.postgres',
+    'django.forms',
 
     # Local apps
     'saleor.userprofile',
@@ -172,12 +173,9 @@ INSTALLED_APPS = [
     'bootstrap3',
     'django_prices',
     'django_prices_openexchangerates',
-    'emailit',
     'graphene_django',
     'mptt',
     'payments',
-    'materializecssform',
-    'rest_framework',
     'webpack_loader',
     'social_django',
     'django_countries',
@@ -271,6 +269,7 @@ LOW_STOCK_THRESHOLD = 10
 MAX_CART_LINE_QUANTITY = os.environ.get('MAX_CART_LINE_QUANTITY', 50)
 
 PAGINATE_BY = 16
+DASHBOARD_PAGINATE_BY = 30
 
 BOOTSTRAP3 = {
     'set_placeholder': False,
@@ -356,7 +355,7 @@ ES_URL = ELASTICSEARCH_URL or SEARCHBOX_URL or BONSAI_URL or ''
 if ES_URL:
     SEARCH_BACKENDS = {
         'default': {
-            'BACKEND': 'saleor.search.backends.elasticsearch2',
+            'BACKEND': 'saleor.search.backends.elasticsearch5',
             'URLS': [ES_URL],
             'INDEX': os.environ.get('ELASTICSEARCH_INDEX_NAME', 'storefront'),
             'TIMEOUT': 5,

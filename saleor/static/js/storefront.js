@@ -2,7 +2,7 @@ import '../scss/storefront.scss';
 import 'jquery.cookie';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Relay from 'react-relay';
+import Relay from 'react-relay/classic';
 import SVGInjector from 'svg-injector-2';
 
 import variantPickerStore from './stores/variantPicker';
@@ -60,7 +60,7 @@ $(document).ready((e) => {
 
   $toogleIcon.click((e) => {
     $mobileNav.toggleClass('open');
-    event.stopPropagation();
+    e.stopPropagation();
   });
   $(document).click((e) => {
     $mobileNav.removeClass('open');
