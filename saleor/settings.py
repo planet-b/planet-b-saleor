@@ -9,6 +9,10 @@ from django.contrib.messages import constants as messages
 import django_cache_url
 
 
+def get_list(text):
+    return [item.strip() for item in text.split(',')]
+
+
 DEBUG = ast.literal_eval(os.environ.get('DEBUG', 'True'))
 
 SITE_ID = 1
@@ -23,7 +27,8 @@ ADMINS = (
     ('Duy Pham', 'duy.phamthe91@gmail.com'),
 )
 MANAGERS = ADMINS
-INTERNAL_IPS = os.environ.get('INTERNAL_IPS', '127.0.0.1').split()
+
+INTERNAL_IPS = get_list(os.environ.get('INTERNAL_IPS', '127.0.0.1'))
 
 CACHES = {'default': django_cache_url.config()}
 
@@ -45,6 +50,7 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 EMAIL_URL = os.environ.get('EMAIL_URL')
 SENDGRID_USERNAME = os.environ.get('SENDGRID_USERNAME')
@@ -65,7 +71,6 @@ EMAIL_USE_SSL = email_config['EMAIL_USE_SSL']
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 ORDER_FROM_EMAIL = os.getenv('ORDER_FROM_EMAIL', DEFAULT_FROM_EMAIL)
-
 
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
 MEDIA_URL = '/media/'
@@ -95,7 +100,7 @@ context_processors = [
     'saleor.core.context_processors.categories',
     'saleor.cart.context_processors.cart_counter',
     'saleor.core.context_processors.search_enabled',
-    'saleor.site.context_processors.settings',
+    'saleor.site.context_processors.site',
     'saleor.core.context_processors.webpage_schema',
     'social_django.context_processors.backends',
     'social_django.context_processors.login_redirect',
@@ -134,6 +139,7 @@ MIDDLEWARE_CLASSES = [
     'saleor.core.middleware.GoogleAnalytics',
     'saleor.core.middleware.CountryMiddleware',
     'saleor.core.middleware.CurrencyMiddleware',
+    'saleor.core.middleware.ClearSiteCacheMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
@@ -150,6 +156,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.auth',
     'django.contrib.postgres',
+    'django.forms',
 
     # Local apps
     'saleor.userprofile',
@@ -172,15 +179,14 @@ INSTALLED_APPS = [
     'bootstrap3',
     'django_prices',
     'django_prices_openexchangerates',
-    'emailit',
     'graphene_django',
     'mptt',
     'payments',
-    'materializecssform',
-    'rest_framework',
     'webpack_loader',
     'social_django',
     'django_countries',
+    'django_filters',
+    'django_celery_results',
 ]
 
 LOGGING = {
@@ -248,8 +254,9 @@ GOOGLE_ANALYTICS_TRACKING_ID = os.environ.get('GOOGLE_ANALYTICS_TRACKING_ID')
 
 
 def get_host():
-    from saleor.site.utils import get_domain
-    return get_domain()
+    from django.contrib.sites.models import Site
+    return Site.objects.get_current().domain
+
 
 PAYMENT_HOST = get_host
 
@@ -271,6 +278,7 @@ LOW_STOCK_THRESHOLD = 10
 MAX_CART_LINE_QUANTITY = os.environ.get('MAX_CART_LINE_QUANTITY', 50)
 
 PAGINATE_BY = 16
+DASHBOARD_PAGINATE_BY = 30
 
 BOOTSTRAP3 = {
     'set_placeholder': False,
@@ -283,7 +291,7 @@ BOOTSTRAP3 = {
 
 TEST_RUNNER = ''
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split()
+ALLOWED_HOSTS = get_list(os.environ.get('ALLOWED_HOSTS', 'localhost'))
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -356,7 +364,7 @@ ES_URL = ELASTICSEARCH_URL or SEARCHBOX_URL or BONSAI_URL or ''
 if ES_URL:
     SEARCH_BACKENDS = {
         'default': {
-            'BACKEND': 'saleor.search.backends.elasticsearch2',
+            'BACKEND': 'saleor.search.backends.elasticsearch5',
             'URLS': [ES_URL],
             'INDEX': os.environ.get('ELASTICSEARCH_INDEX_NAME', 'storefront'),
             'TIMEOUT': 5,
@@ -381,8 +389,6 @@ GRAPHENE = {
         PROJECT_ROOT, 'saleor', 'static', 'schema.json')
 }
 
-SITE_SETTINGS_ID = 1
-
 AUTHENTICATION_BACKENDS = [
     'saleor.registration.backends.facebook.CustomFacebookOAuth2',
     'saleor.registration.backends.google.CustomGoogleOAuth2',
@@ -406,6 +412,16 @@ SOCIAL_AUTH_USER_MODEL = AUTH_USER_MODEL
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
     'fields': 'id, email'}
+
+
+# CELERY SETTINGS
+CELERY_BROKER_URL = os.environ.get('REDIS_BROKER_URL') or ''
+CELERY_TASK_ALWAYS_EAGER = False if CELERY_BROKER_URL else True
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'django-db'
+
 
 # Override production variables if DJANGO_DEVELOPMENT env variable is set
 if os.environ.get('DJANGO_DEVELOPMENT') is not None:

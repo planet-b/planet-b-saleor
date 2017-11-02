@@ -1,16 +1,17 @@
+############################# Saleor #############################
 *.py[cod]
 .*
-!.slugignore
 !.babelrc
 !.codeclimate.yml
 !.coveragerc
 !.dockerignore
+!.eslintrc.json
 !.flowconfig
 !.gitignore
 !.nvmrc
 !.pylintrc
 !.travis*
-!.eslintrc.json
+!.tx
 *.css
 *.log
 *.pot
@@ -26,9 +27,7 @@ dist/
 /node_modules/
 /static/
 /saleor/static/assets/
-/saleor/settings_dev.py
 webpack-bundle.json
-*.mo
 
 ############################# SublimeText #############################
 
@@ -62,16 +61,55 @@ GitHub.sublime-settings
 
 
 ############################# VirtualEnv #############################
-.Python
-[Bb]in
-[Ii]nclude
-[Ll]ib
-[Ll]ib64
-[Ll]ocal
-[Ss]cripts
-pyvenv.cfg
-.venv
-venv
-ENV
-env
-pip-selfcheck.json
+/.venv
+/venv
+/ENV
+/env
+
+############################# Jetbrains #############################
+# User-specific stuff:
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/dictionaries
+
+# Sensitive or high-churn files:
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.xml
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+
+# Gradle:
+.idea/**/gradle.xml
+.idea/**/libraries
+
+# CMake
+cmake-build-debug/
+
+# Mongo Explorer plugin:
+.idea/**/mongoSettings.xml
+
+## File-based project format:
+*.iws
+
+## Plugin-specific files:
+
+# IntelliJ
+out/
+
+# mpeltonen/sbt-idea plugin
+.idea_modules/
+
+# JIRA plugin
+atlassian-ide-plugin.xml
+
+# Cursive Clojure plugin
+.idea/replstate.xml
+
+# Crashlytics plugin (for Android Studio and IntelliJ)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties

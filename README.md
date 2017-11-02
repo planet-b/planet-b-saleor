@@ -1,10 +1,4 @@
-# Planet-B
-
-
-Planet-B
-======
-
-Our homepage
+Homepage
 
 [Planet-B homepage](http://planet-b.co/)
 
