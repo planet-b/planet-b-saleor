@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === 'production') {
   output = {
     path: resolve('saleor/static/assets/'),
     filename: '[name].[chunkhash].js',
-    publicPath: 'https://saleor-demo.s3.amazonaws.com/assets/'
+    publicPath: process.env.STATIC_URL || '/static/assets/'
   };
   fileLoaderPath = 'file-loader?name=[name].[hash].[ext]';
   extractTextPlugin = new ExtractTextPlugin('[name].[contenthash].css');
@@ -47,11 +47,8 @@ var environmentPlugin = new webpack.DefinePlugin({
 
 var providePlugin = new webpack.ProvidePlugin({
   $: 'jquery',
-  '_': 'underscore',
   jQuery: 'jquery',
   'window.jQuery': 'jquery',
-  'Tether': 'tether',
-  'window.Tether': 'tether',
   'Popper': 'popper.js'
 });
 
@@ -65,6 +62,7 @@ var config = {
   entry: {
     dashboard: './saleor/static/dashboard/js/dashboard.js',
     storefront: './saleor/static/js/storefront.js',
+    document: './saleor/static/dashboard/scss/document.scss',
     vendor: [
       'babel-es6-polyfill',
       'bootstrap',

@@ -9,6 +9,10 @@ from django.contrib.messages import constants as messages
 import django_cache_url
 
 
+def get_list(text):
+    return [item.strip() for item in text.split(',')]
+
+
 DEBUG = ast.literal_eval(os.environ.get('DEBUG', 'True'))
 
 SITE_ID = 1
@@ -23,7 +27,8 @@ ADMINS = (
     ('Duy Pham', 'duy.phamthe91@gmail.com'),
 )
 MANAGERS = ADMINS
-INTERNAL_IPS = os.environ.get('INTERNAL_IPS', '127.0.0.1').split()
+
+INTERNAL_IPS = get_list(os.environ.get('INTERNAL_IPS', '127.0.0.1'))
 
 CACHES = {'default': django_cache_url.config()}
 
@@ -95,7 +100,7 @@ context_processors = [
     'saleor.core.context_processors.categories',
     'saleor.cart.context_processors.cart_counter',
     'saleor.core.context_processors.search_enabled',
-    'saleor.site.context_processors.settings',
+    'saleor.site.context_processors.site',
     'saleor.core.context_processors.webpage_schema',
     'social_django.context_processors.backends',
     'social_django.context_processors.login_redirect',
@@ -134,6 +139,7 @@ MIDDLEWARE_CLASSES = [
     'saleor.core.middleware.GoogleAnalytics',
     'saleor.core.middleware.CountryMiddleware',
     'saleor.core.middleware.CurrencyMiddleware',
+    'saleor.core.middleware.ClearSiteCacheMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
@@ -180,6 +186,7 @@ INSTALLED_APPS = [
     'social_django',
     'django_countries',
     'django_filters',
+    'django_celery_results',
 ]
 
 LOGGING = {
@@ -247,8 +254,9 @@ GOOGLE_ANALYTICS_TRACKING_ID = os.environ.get('GOOGLE_ANALYTICS_TRACKING_ID')
 
 
 def get_host():
-    from saleor.site.utils import get_domain
-    return get_domain()
+    from django.contrib.sites.models import Site
+    return Site.objects.get_current().domain
+
 
 PAYMENT_HOST = get_host
 
@@ -283,7 +291,7 @@ BOOTSTRAP3 = {
 
 TEST_RUNNER = ''
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split()
+ALLOWED_HOSTS = get_list(os.environ.get('ALLOWED_HOSTS', 'localhost'))
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -381,8 +389,6 @@ GRAPHENE = {
         PROJECT_ROOT, 'saleor', 'static', 'schema.json')
 }
 
-SITE_SETTINGS_ID = 1
-
 AUTHENTICATION_BACKENDS = [
     'saleor.registration.backends.facebook.CustomFacebookOAuth2',
     'saleor.registration.backends.google.CustomGoogleOAuth2',
@@ -406,6 +412,16 @@ SOCIAL_AUTH_USER_MODEL = AUTH_USER_MODEL
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
     'fields': 'id, email'}
+
+
+# CELERY SETTINGS
+CELERY_BROKER_URL = os.environ.get('REDIS_BROKER_URL') or ''
+CELERY_TASK_ALWAYS_EAGER = False if CELERY_BROKER_URL else True
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'django-db'
+
 
 # Override production variables if DJANGO_DEVELOPMENT env variable is set
 if os.environ.get('DJANGO_DEVELOPMENT') is not None:

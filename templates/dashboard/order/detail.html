@@ -351,10 +351,16 @@
                   </a>
                 {% endif %}
                 {% if group.can_cancel %}
-                  <a href="#base-modal" data-href="{% url 'dashboard:cancel-delivery-group' order_pk=order.pk group_pk=group.pk %}" class="btn btn-flat modal-trigger-custom" title="{% trans "Cancel group" context "Shipment group table action" %}">
+                  <a href="#base-modal" data-href="{% url 'dashboard:cancel-delivery-group' order_pk=order.pk group_pk=group.pk %}" class="btn btn-flat modal-trigger-custom" title="{% trans 'Cancel group' context 'Shipment group table action' %}">
                     {% trans "Cancel this shipment" context "Shipment group table action" %}
                   </a>
                 {% endif %}
+                <a href="{% url 'dashboard:order-invoice' group_pk=group.pk %}" data-href="" class="btn btn-flat" target="_blank">
+                  {% trans "Invoice" context "Order detail action" %}
+                </a>
+                <a href="{% url 'dashboard:order-packing-slips' group_pk=group.pk %}" data-href="" class="btn btn-flat" target="_blank">
+                  {% trans "Packing Slips" context "Order detail action" %}
+                </a>
               </div>
             {% else %}
               {% if group.tracking_number %}
@@ -363,6 +369,14 @@
                     Tracking number: {{ tracking }}
                   {% endblocktrans %}
                 </div>
+              {% else %}
+                {% if group.tracking_number %}
+                  <div class="card-action">
+                    {% blocktrans trimmed with tracking=group.tracking_number context "Shipment group table text" %}
+                      Tracking number: {{ tracking }}
+                    {% endblocktrans %}
+                  </div>
+                {% endif %}
               {% endif %}
             {% endif %}
           {% endif %}
@@ -512,47 +526,20 @@
       </p>
     {% endif %}
   </div>
-  <div class="card tab-content" id="order-history">
+  <div class="tab-content" id="order-history">
     <p class="print-show print-tabs">{% trans "History" context "Order detail tab" %}</p>
-    <div class="data-table-container">
-      <table class="bordered highlight responsive data-table">
-        <thead>
-          <tr>
-            <th>
-              {% trans "Date" context "Order history table header" %}
-            </th>
-            <th>
-              {% trans "Order status" context "Order history table header" %}
-            </th>
-            <th>
-              {% trans "User" context "Order history table header" %}
-            </th>
-            <th class="wide">
-              {% trans "Comment" context "Order history table header" %}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for event in order.history.all %}
-          <tr>
-            <td>
-              {{ event.date }}
-            </td>
-            <td>
+  <div class="timeline-outer">
+    <ul class="timeline">
+      {% for event in order.history.all %}
+        <li class="event" data-date="{{ event.date }}">
+          <div class="content">
+            {{ event.comment|default:"" }}{% if event.user %} by {{ event.user }}{% endif %}
+            <div class="status">
               {% render_status event.status event.get_status_display %}
-            </td>
-            <td>
-              {% if event.user %}
-                {{ event.user }}
-              {% endif %}
-            </td>
-            <td>
-              {{ event.comment|default:"" }}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+            </div>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
   </div>
 {% endblock %}

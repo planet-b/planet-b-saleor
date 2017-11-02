@@ -8,6 +8,7 @@ from io import BytesIO
 from PIL import Image
 
 from django.contrib.auth.models import AnonymousUser
+from django.contrib.sites.models import Site
 from django.utils.encoding import smart_text
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import AnonymousUser, Group, Permission
@@ -28,6 +29,19 @@ from saleor.product.models import (AttributeChoiceValue, Category, Product,
 from saleor.shipping.models import ShippingMethod
 from saleor.site.models import SiteSettings, AuthorizationKey
 from saleor.userprofile.models import Address, User
+
+
+@pytest.fixture(autouse=True)
+def site_settings(db, settings):
+    '''
+    This fixture is autouse set to True because
+    django.contrib.sites.models.Site and saleor.site.models.SiteSettings has
+    OneToOne relationship and Site should never exist without SiteSettings.
+    '''
+    site = Site.objects.get_or_create(name="mirumee.com", domain="mirumee.com")[0]
+    obj = SiteSettings.objects.get_or_create(site=site)[0]
+    settings.SITE_ID = site.pk
+    return obj
 
 
 @pytest.fixture
@@ -240,7 +254,14 @@ def product_in_stock(product_class, default_category):
         product_class=product_class, attributes=attributes)
     product.categories.add(default_category)
 
-    variant = ProductVariant.objects.create(product=product, sku='123')
+    variant_attr = product_class.variant_attributes.first()
+    variant_attr_value = variant_attr.values.first()
+    variant_attributes = {
+        smart_text(variant_attr.pk): smart_text(variant_attr_value.pk)
+    }
+
+    variant = ProductVariant.objects.create(
+        product=product, sku='123', attributes=variant_attributes)
     warehouse_1 = StockLocation.objects.create(name='Warehouse 1')
     warehouse_2 = StockLocation.objects.create(name='Warehouse 2')
     warehouse_3 = StockLocation.objects.create(name='Warehouse 3')
@@ -254,6 +275,25 @@ def product_in_stock(product_class, default_category):
         variant=variant, cost_price=10, quantity=5, quantity_allocated=0,
         location=warehouse_3)
     return product
+
+
+@pytest.fixture
+def product_list(product_class, default_category):
+    product_attr = product_class.product_attributes.first()
+    attr_value = product_attr.values.first()
+    attributes = {smart_text(product_attr.pk): smart_text(attr_value.pk)}
+
+    product_1 = Product.objects.create(
+        name='Test product 1', price=Decimal('10.00'),
+        product_class=product_class, attributes=attributes)
+    product_1.categories.add(default_category)
+
+    product_2 = Product.objects.create(
+        name='Test product 2', price=Decimal('20.00'),
+        product_class=product_class, attributes=attributes)
+    product_2.categories.add(default_category)
+
+    return [product_1, product_2]
 
 
 @pytest.fixture
@@ -406,15 +446,6 @@ def sale(db, default_category):
     sale = Sale.objects.create(name="Sale", value=5)
     sale.categories.add(default_category)
     return sale
-
-
-@pytest.fixture
-def site_settings(db, settings):
-    obj = SiteSettings.objects.create(name="mirumee.com",
-                                      header_text="mirumee.com",
-                                      domain="mirumee.com")
-    settings.SITE_SETTINGS_ID = obj.pk
-    return obj
 
 
 @pytest.fixture
