@@ -1,4 +1,4 @@
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from payments import FraudStatus, PaymentStatus
 
 from saleor.userprofile.models import User
@@ -23,6 +23,7 @@ def test_checkout_flow(request_cart_with_item, client, shipping_method):
         'city_area': '',
         'country_area': '',
         'postal_code': '00-374',
+        'phone': '+48536984008',
         'country': 'PL'}
     shipping_response = client.post(
         shipping_address.request['PATH_INFO'], data=shipping_data, follow=True)

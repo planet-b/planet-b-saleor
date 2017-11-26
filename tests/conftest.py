@@ -7,9 +7,7 @@ import pytest
 from io import BytesIO
 from PIL import Image
 
-from django.contrib.auth.models import AnonymousUser
 from django.contrib.sites.models import Site
-from django.utils.encoding import smart_text
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import AnonymousUser, Group, Permission
 from django.core.files import File
@@ -417,7 +415,8 @@ def order_with_items_and_stock(order, product_class):
         quantity=3,
         unit_price_net=Decimal('30.00'),
         unit_price_gross=Decimal('30.00'),
-        stock=stock
+        stock=stock,
+        stock_location=stock.location.name
     )
     product = Product.objects.create(
         name='Test product 2', price=Decimal('20.00'),
@@ -434,7 +433,8 @@ def order_with_items_and_stock(order, product_class):
         quantity=2,
         unit_price_net=Decimal('20.00'),
         unit_price_gross=Decimal('20.00'),
-        stock=stock
+        stock=stock,
+        stock_location=stock.location.name
     )
     Order.objects.recalculate_order(order)
     order.refresh_from_db()
@@ -453,3 +453,69 @@ def authorization_key(db, site_settings):
     return AuthorizationKey.objects.create(
         site_settings=site_settings, name='Backend', key='Key',
         password='Password')
+
+
+@pytest.fixture
+def product_list(product_class):
+    product_1 = Product.objects.create(
+        name='Test product 1', price=Decimal('10.00'),
+        product_class=product_class, is_published=True)
+    product_2 = Product.objects.create(
+        name='Test product 2', price=Decimal('20.00'),
+        product_class=product_class, is_published=False)
+    return [product_1, product_2]
+
+
+@pytest.fixture
+def permission_view_staff():
+    return Permission.objects.get(codename='view_staff')
+
+
+@pytest.fixture
+def permission_edit_staff():
+    return Permission.objects.get(codename='edit_staff')
+
+
+@pytest.fixture
+def permission_view_group():
+    return Permission.objects.get(codename='view_group')
+
+
+@pytest.fixture
+def permission_edit_group():
+    return Permission.objects.get(codename='edit_group')
+
+
+@pytest.fixture
+def permission_view_properties():
+    return Permission.objects.get(codename='view_properties')
+
+
+@pytest.fixture
+def permission_edit_properties():
+    return Permission.objects.get(codename='edit_properties')
+
+
+@pytest.fixture
+def permission_view_shipping():
+    return Permission.objects.get(codename='view_shipping')
+
+
+@pytest.fixture
+def permission_edit_shipping():
+    return Permission.objects.get(codename='edit_shipping')
+
+
+@pytest.fixture
+def permission_edit_user():
+    return Permission.objects.get(codename='edit_user')
+
+
+@pytest.fixture
+def permission_edit_settings():
+    return Permission.objects.get(codename='edit_settings')
+
+
+@pytest.fixture
+def permission_impersonate_user():
+    return Permission.objects.get(codename='impersonate_user')

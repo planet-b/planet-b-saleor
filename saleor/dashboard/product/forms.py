@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django import forms
 from django.db.models import Count
-from django.forms.models import ModelChoiceIterator, inlineformset_factory
+from django.forms.models import ModelChoiceIterator
 from django.forms.widgets import CheckboxSelectMultiple
 from django.utils.encoding import smart_text
 from django.utils.text import slugify
@@ -11,8 +11,8 @@ from django.utils.translation import pgettext_lazy
 from ...product.models import (
     AttributeChoiceValue, Product, ProductAttribute, ProductClass,
     ProductImage, ProductVariant, Stock, StockLocation, VariantImage)
-from ...search import index as search_index
 from .widgets import ImagePreviewWidget
+from . import ProductBulkAction
 
 
 class ProductClassSelectorForm(forms.Form):
@@ -145,7 +145,6 @@ class ProductForm(forms.ModelForm):
                 attributes[smart_text(attr.pk)] = value
         self.instance.attributes = attributes
         instance = super(ProductForm, self).save(commit=commit)
-        search_index.insert_or_update_object(instance)
         return instance
 
 
@@ -278,16 +277,12 @@ class StockLocationForm(forms.ModelForm):
 class AttributeChoiceValueForm(forms.ModelForm):
     class Meta:
         model = AttributeChoiceValue
-        exclude = ('slug', )
+        fields = ['attribute', 'name', 'color']
+        widgets = {'attribute': forms.widgets.HiddenInput()}
 
     def save(self, commit=True):
         self.instance.slug = slugify(self.instance.name)
         return super(AttributeChoiceValueForm, self).save(commit=commit)
-
-
-AttributeChoiceValueFormset = inlineformset_factory(
-    ProductAttribute, AttributeChoiceValue, form=AttributeChoiceValueForm,
-    extra=1)
 
 
 class OrderedModelMultipleChoiceField(forms.ModelMultipleChoiceField):
@@ -326,3 +321,22 @@ class UploadImageForm(forms.ModelForm):
         product = kwargs.pop('product')
         super(UploadImageForm, self).__init__(*args, **kwargs)
         self.instance.product = product
+
+
+class ProductBulkUpdate(forms.Form):
+    """Performs one selected bulk action on all selected products."""
+    action = forms.ChoiceField(choices=ProductBulkAction.CHOICES)
+    products = forms.ModelMultipleChoiceField(queryset=Product.objects.all())
+
+    def save(self):
+        action = self.cleaned_data['action']
+        if action == ProductBulkAction.PUBLISH:
+            self._publish_products()
+        elif action == ProductBulkAction.UNPUBLISH:
+            self._unpublish_products()
+
+    def _publish_products(self):
+        self.cleaned_data['products'].update(is_published=True)
+
+    def _unpublish_products(self):
+        self.cleaned_data['products'].update(is_published=False)

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -6,18 +8,27 @@ from django.utils.translation import pgettext_lazy
 from . import AuthenticationBackends
 from .patch_sites import patch_contrib_sites
 
-
 patch_contrib_sites()
 
 
 @python_2_unicode_compatible
 class SiteSettings(models.Model):
-    site = models.OneToOneField(Site, related_name='settings')
+    site = models.OneToOneField(
+        Site, related_name='settings', on_delete=models.CASCADE)
     header_text = models.CharField(
         pgettext_lazy('Site field', 'header text'), max_length=200, blank=True)
     description = models.CharField(
         pgettext_lazy('Site field', 'site description'), max_length=500,
         blank=True)
+
+    class Meta:
+        permissions = (
+            ('edit_settings',
+             pgettext_lazy('Permission description',
+                           'Can edit site settings')),
+            ('view_settings',
+             pgettext_lazy('Permission description',
+                           'Can view site settings')))
 
     def __str__(self):
         return self.site.name
@@ -28,7 +39,7 @@ class SiteSettings(models.Model):
 
 @python_2_unicode_compatible
 class AuthorizationKey(models.Model):
-    site_settings = models.ForeignKey(SiteSettings)
+    site_settings = models.ForeignKey(SiteSettings, on_delete=models.CASCADE)
     name = models.CharField(
         pgettext_lazy('Authentiaction field', 'name'), max_length=20,
         choices=AuthenticationBackends.BACKENDS)

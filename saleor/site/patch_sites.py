@@ -3,13 +3,13 @@ Since django.contrib.sites may not be thread-safe when there are
 multiple instances of the application server, we're patching it with
 a thread-safe structure and methods that use it underneath.
 '''
+from __future__ import unicode_literals
 
 import threading
 
-from django.contrib.sites.models import SiteManager
+from django.contrib.sites.models import Site, SiteManager
 from django.core.exceptions import ImproperlyConfigured
 from django.http.request import split_domain_port
-
 
 lock = threading.Lock()
 with lock:
@@ -37,7 +37,7 @@ def new_get_current(self, request=None):
             return THREADED_SITE_CACHE[host]
         except Site.DoesNotExist:
             # Fallback to looking up site after stripping port from the host.
-            domain, port = split_domain_port(host)
+            domain, dummy_port = split_domain_port(host)
             if domain not in THREADED_SITE_CACHE:
                 with lock:
                     site = self.prefetch_related('settings').filter(

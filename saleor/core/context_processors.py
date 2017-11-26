@@ -4,7 +4,7 @@ import json
 
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from ..core.utils import build_absolute_uri
 from ..product.models import Category
@@ -31,7 +31,7 @@ def categories(request):
 
 
 def search_enabled(request):
-    return {'SEARCH_IS_ENABLED': bool(settings.SEARCH_BACKENDS)}
+    return {'SEARCH_IS_ENABLED': bool(settings.ENABLE_SEARCH)}
 
 
 def webpage_schema(request):
@@ -43,7 +43,7 @@ def webpage_schema(request):
         'url': url,
         'name': site.name,
         'description': site.settings.description}
-    if bool(settings.SEARCH_BACKENDS):
+    if bool(settings.ENABLE_SEARCH):
         data['potentialAction'] = {
             '@type': 'SearchAction',
             'target': '%s%s?q={search_term}' % (url, reverse('search:search')),
