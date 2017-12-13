@@ -127,6 +127,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 
 MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -156,6 +157,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.postgres',
     'django.forms',
+    'corsheaders',
 
     # Local apps
     'saleor.userprofile',
@@ -258,6 +260,8 @@ ACCOUNT_ACTIVATION_DAYS = 3
 LOGIN_REDIRECT_URL = 'home'
 
 GOOGLE_ANALYTICS_TRACKING_ID = os.environ.get('GOOGLE_ANALYTICS_TRACKING_ID')
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 
 def get_host():
