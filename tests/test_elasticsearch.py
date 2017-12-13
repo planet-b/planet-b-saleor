@@ -1,10 +1,14 @@
+from __future__ import unicode_literals
+
+from decimal import Decimal
+
+from django.core.urlresolvers import reverse
+import pytest
+
+from elasticsearch_dsl.connections import connections
+from saleor.order.models import Order
 from saleor.product.models import Product
 from saleor.userprofile.models import User
-from saleor.order.models import Order
-from django.core.urlresolvers import reverse
-from elasticsearch_dsl.connections import connections
-from decimal import Decimal
-import pytest
 
 MATCH_SEARCH_REQUEST = ['method', 'host', 'port', 'path']
 STOREFRONT_PRODUCTS = {15, 56}  # same as in recorded data!
@@ -14,19 +18,26 @@ PRODUCTS_TO_UNPUBLISH = {56}  # choose from PRODUCTS_INDEXED
 PHRASE_WITH_RESULTS = 'Group'
 PHRASE_WITHOUT_RESULTS = 'foo'
 
-
-@pytest.fixture(scope='function', autouse=True)
-def es_autosync_disabled(settings):
-    ''' Prevent ES index from being refreshed every time obj is saved '''
-    settings.ENABLE_SEARCH = True
-    settings.ELASTICSEARCH_DSL_AUTO_REFRESH = False
-    settings.ELASTICSEARCH_DSL_AUTOSYNC = False
+ES_URL = 'http://search:9200'  # make it real for communication recording
 
 
 @pytest.fixture(scope='module', autouse=True)
-def enable_es():
-    ES_URL = 'http://search:9200'
+def elasticsearch_connection():
     connections.create_connection('default', hosts=[ES_URL])
+
+
+@pytest.fixture(scope='function', autouse=True)
+def elasticsearch_enabled(settings):
+    settings.ES_URL = ES_URL
+    settings.ENABLE_SEARCH = True
+    settings.SEARCH_BACKEND = 'saleor.search.backends.elasticsearch'
+
+
+@pytest.fixture(scope='function', autouse=True)
+def elasticsearch_autosync_disabled(settings):
+    ''' Prevent ES index from being refreshed every time obj is saved '''
+    settings.ELASTICSEARCH_DSL_AUTO_REFRESH = False
+    settings.ELASTICSEARCH_DSL_AUTOSYNC = False
 
 
 @pytest.mark.vcr()

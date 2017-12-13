@@ -361,14 +361,23 @@ WEBPACK_LOADER = {
 
 LOGOUT_ON_PASSWORD_CHANGE = False
 
-ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL', None)
-ENABLE_SEARCH = bool(ELASTICSEARCH_URL)
+# SEARCH CONFIGURATION
+DB_SEARCH_ENABLED = True
 
-if ELASTICSEARCH_URL:
+# support deployment-dependant elastic enviroment variable
+ES_URL = (os.environ.get('ELASTICSEARCH_URL') or
+          os.environ.get('SEARCHBOX_URL') or os.environ.get('BONSAI_URL'))
+
+ENABLE_SEARCH = bool(ES_URL) or DB_SEARCH_ENABLED  # global search disabling
+
+SEARCH_BACKEND = 'saleor.search.backends.postgresql'
+
+if ES_URL:
+    SEARCH_BACKEND = 'saleor.search.backends.elasticsearch'
     INSTALLED_APPS.append('django_elasticsearch_dsl')
     ELASTICSEARCH_DSL = {
         'default': {
-            'hosts': ELASTICSEARCH_URL
+            'hosts': ES_URL
         },
     }
 
