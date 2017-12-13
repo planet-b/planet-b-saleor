@@ -1,4 +1,5 @@
-from .models import Address, User
+from __future__ import unicode_literals
+
 
 
 def store_user_address(user, address, billing=False, shipping=False):

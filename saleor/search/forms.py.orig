@@ -1,0 +1,22 @@
+from __future__ import unicode_literals
+
+from django import forms
+from django.utils.translation import pgettext
+<<<<<<< HEAD
+from .backends import elasticsearch
+=======
+from .backends import picker
+>>>>>>> v2017.11
+
+
+class SearchForm(forms.Form):
+    q = forms.CharField(
+        label=pgettext('Search form label', 'Query'), required=True)
+
+    def search(self):
+<<<<<<< HEAD
+        return elasticsearch.search(self.cleaned_data['q'])
+=======
+        search = picker.pick_backend()
+        return search(self.cleaned_data['q'])
+>>>>>>> v2017.11

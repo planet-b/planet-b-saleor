@@ -1,0 +1,19 @@
+<<<<<<< HEAD
+=======
+from __future__ import unicode_literals
+
+from ...search.backends import picker
+>>>>>>> v2017.11
+from ...search.forms import SearchForm
+from ...search.backends import elasticsearch_dashboard
+
+
+class DashboardSearchForm(SearchForm):
+    def search(self):
+        query = self.cleaned_data['q']
+<<<<<<< HEAD
+        return elasticsearch_dashboard.search(query)
+=======
+        search = picker.pick_dashboard_backend()
+        return search(query)
+>>>>>>> v2017.11
