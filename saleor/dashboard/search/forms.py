@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from ...search.backends import picker
 from ...search.forms import SearchForm
-from ...search.backends import elasticsearch_dashboard
 
 
 class DashboardSearchForm(SearchForm):

@@ -164,14 +164,3 @@ svg {
     color: #999;
   }
 }
-
-svg {
-  &.fill {
-    &-primary {
-      fill: $primary-color;
-    }
-    &-secondary {
-      fill: $secondary-color;
-    }
-  }
-}

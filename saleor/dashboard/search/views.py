@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.http import Http404
 from django.shortcuts import render
 
@@ -31,8 +32,6 @@ def search(request):
     orders = []
     if form.is_valid():
         products, orders, users = get_results(request, form)
-        products = results['products']
-        orders = results['orders']
         query = form.cleaned_data['q']
     ctx = {
         'form': form,
