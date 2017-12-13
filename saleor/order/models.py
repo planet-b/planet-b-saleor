@@ -244,7 +244,6 @@ class DeliveryGroup(models.Model, ItemSet):
         pgettext_lazy('Delivery group field', 'last updated'),
         null=True, auto_now=True)
 
-            'Delivery group model', 'Delivery Groups')
     def __str__(self):
         return pgettext_lazy(
             'Delivery group str', 'Shipment #%s') % self.pk
