@@ -30,6 +30,8 @@ dist/
 /saleor/static/assets/
 webpack-bundle.json
 
+*.orig
+
 ############################# SublimeText #############################
 
 # cache files for sublime text

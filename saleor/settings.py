@@ -372,6 +372,7 @@ ENABLE_SEARCH = bool(ES_URL) or DB_SEARCH_ENABLED  # global search disabling
 
 SEARCH_BACKEND = 'saleor.search.backends.postgresql'
 
+if ES_URL:
     SEARCH_BACKEND = 'saleor.search.backends.elasticsearch'
     INSTALLED_APPS.append('django_elasticsearch_dsl')
     ELASTICSEARCH_DSL = {
