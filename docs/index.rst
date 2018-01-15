@@ -12,8 +12,9 @@ Contents:
    configuration
    products
    stock
+   orders
    settings
-   search
+   contentsearch
    localization
    seo
    payments

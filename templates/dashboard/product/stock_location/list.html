@@ -1,7 +1,6 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% load materializecss %}
-{% load get_sort_by_toggle from shop %}
 {% load staticfiles %}
 {% load utils %}
 
@@ -13,8 +12,8 @@
 
 {% block header_extra %}
   {% if perms.product.edit_stock_location %}
-    <div class="fixed-action-btn">
-      <a class="btn-fab btn-floating btn-large waves-effect waves-light" href="{% url 'dashboard:product-stock-location-add' %}" title="{% trans "Add stock location" context "Stock location list add button text" %}">
+    <div class="btn-fab-fixed">
+      <a class="btn-fab-default waves-effect waves-light" href="{% url 'dashboard:product-stock-location-add' %}" title="{% trans "Add stock location" context "Stock location list add button text" %}">
         <svg data-src="{% static "dashboard/images/add.svg" %}" />
       </a>
     </div>
@@ -40,13 +39,8 @@
             <table class="highlight bordered data-table">
               <thead>
                 <tr>
-                  {% get_sort_by_toggle 'name' as toggle %}
-                  <th class="wide {% if toggle.is_active %}active{% endif %}">
-                    <a href="{{ toggle.url }}">
-                      <svg data-src="{{ toggle.sorting_icon }}" />
-                      {% trans "Name" context "Dashboard stock location table header name" %}
-                    </a>
-                  </th>
+                  {% trans "Name" context "Dashboard stock location table header name" as label %}
+                  {% sorting_header 'name' label is_wide=True %}
                 </tr>
               </thead>
               <tbody>
@@ -62,12 +56,21 @@
         </div>
         {% paginate locations %}
       {% else %}
-        <div class="not-found">
-          <p class="grey-text">
-            {% trans "No locations found." context "Empty stock location list message" %}
-          </p>
-        </div>
+        {% if is_empty %}
+          {% include 'dashboard/product/stock_location/zero_page.html' %}
+        {% else %}
+          <div class="col s12">
+            <div class="not-found">
+              <p class="grey-text">
+                {% trans "No locations found." context "Empty stock location list message" %}
+              </p>
+            </div>
+          </div>
+        {% endif %}
       {% endif %}
+    </div>
+    <div class="col s12 l3" id="filters">
+      {% if not is_empty %}{% filters filter_set %}{% endif %}
     </div>
   </div>
 {% endblock %}

@@ -1,15 +1,13 @@
-from __future__ import unicode_literals
-
 from django import forms
-from django.utils.translation import pgettext_lazy
+from django.utils.translation import npgettext, pgettext_lazy
 from django_filters import (
     CharFilter, ChoiceFilter, ModelMultipleChoiceFilter, RangeFilter,
     OrderingFilter)
 
+from ...core.filters import SortedFilterSet
+from ..widgets import PriceRangeWidget
 from ...product.models import (
     Category, Product, ProductAttribute, ProductClass, StockLocation)
-from ..filters import SortedFilterSet
-from ..widgets import PriceRangeWidget
 
 PRODUCT_SORT_BY_FIELDS = {
     'name': pgettext_lazy('Product list sorting option', 'name'),
@@ -65,6 +63,14 @@ class ProductFilter(SortedFilterSet):
         model = Product
         fields = []
 
+    def get_summary_message(self):
+        counter = self.qs.count()
+        return npgettext(
+            'Number of matching records in the dashboard products list',
+            'Found %(counter)d matching product',
+            'Found %(counter)d matching products',
+            number=counter) % {'counter': counter}
+
 
 class ProductAttributeFilter(SortedFilterSet):
     name = CharFilter(
@@ -78,6 +84,15 @@ class ProductAttributeFilter(SortedFilterSet):
     class Meta:
         model = ProductAttribute
         fields = []
+
+    def get_summary_message(self):
+        counter = self.qs.count()
+        return npgettext(
+            'Number of matching records in the dashboard '
+            'product attributes list',
+            'Found %(counter)d matching attribute',
+            'Found %(counter)d matching attributes',
+            number=counter) % {'counter': counter}
 
 
 class ProductClassFilter(SortedFilterSet):
@@ -93,6 +108,14 @@ class ProductClassFilter(SortedFilterSet):
         model = ProductClass
         fields = ['name', 'product_attributes', 'variant_attributes']
 
+    def get_summary_message(self):
+        counter = self.qs.count()
+        return npgettext(
+            'Number of matching records in the dashboard product types list',
+            'Found %(counter)d matching product type',
+            'Found %(counter)d matching product types',
+            number=counter) % {'counter': counter}
+
 
 class StockLocationFilter(SortedFilterSet):
     sort_by = OrderingFilter(
@@ -100,6 +123,9 @@ class StockLocationFilter(SortedFilterSet):
             'Stock location list filter label', 'Sort by'),
         fields=STOCK_LOCATION_SORT_BY_FIELDS.keys(),
         field_labels=STOCK_LOCATION_SORT_BY_FIELDS)
+    name = CharFilter(
+        label=pgettext_lazy('Stock location list filter label', 'Name'),
+        lookup_expr='icontains')
 
     class Meta:
         model = StockLocation

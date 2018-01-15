@@ -3,14 +3,32 @@
 {% load i18n %}
 {% load shop %}
 {% load staticfiles %}
-{% load render_bundle from webpack_loader %}
 {% load prices_i18n %}
+{% load build_absolute_uri from urls %}
 
 {% block footer_scripts %}
   {{ block.super }}
 {% endblock footer_scripts %}
 
 {% block title %}{{ category }} — {{ block.super }}{% endblock %}
+
+{% block meta_tags %}
+    <meta property="og:title" content="{{ category }}">
+    <meta property="og:description" content="{{ category.description }}">
+    <meta property="og:image" content="{% static "images/block1.png" %}">
+
+    {% build_absolute_uri request=request location=category.get_absolute_url as category_url %}
+    <meta property="og:url" content="{{ category_url }}">
+    <link rel="canonical" href="{{ category_url }}?page={{ products_paginated.number }}">
+
+    {% if products_paginated.has_previous %}
+      <link rel="prev" href="{{ category_url }}?page={{ products_paginated.previous_page_number }}">
+    {% endif %}
+
+    {% if products_paginated.has_next %}
+      <link rel="next" href="{{ category_url }}?page={{ products_paginated.next_page_number }}">
+    {% endif %}
+{% endblock meta_tags %}
 
 {% block breadcrumb %}
   {{ block.super }}
@@ -31,17 +49,17 @@
       <div class="row">
         <div class="col-md-7">
           <ul class="breadcrumbs list-unstyled d-none d-md-block">
-            <li><a href="/">{% trans "Home"  context 'Category breadcrumbs home' %}</a></li>
+            <li><a href="{% url 'home' %}">{% trans "Home"  context 'Category breadcrumbs home' %}</a></li>
             {% for ancestor in category.get_ancestors %}
               <li><a href='{{ ancestor.get_absolute_url }}'>{{ ancestor.name }}</a></li>
             {% endfor %}
             <li><a href='{{ category.get_absolute_url }}'>{{ category.name }}</a></li>
           </ul>
         </div>
-        <div class="col-md-5">
+        <div class="col-md-5 filters-menu__wrapper">
           <div class="row">
             <div class="col-6 col-md-2 col-lg-6 filters-menu">
-              <span class="filters-menu__label d-sm-none">Filters</span>
+              <span class="filters-menu__label d-md-none">Filters</span>
             </div>
             <div class="col-6 col-md-10 col-lg-6">
               <div class="sort-by">
@@ -49,16 +67,21 @@
                 <button class="btn btn-link">
                   <div>
                     <span>
-                     {% trans 'Sort by' context 'Category page filters' %}
-                      <strong>
-                        {{ now_sorted_by }}
-                      </strong>
+                      {% if now_sorted_by == 'name' %}
+                        {% blocktrans trimmed %}
+                          Sort by: <b>name</b>
+                        {% endblocktrans %}
+                      {% elif now_sorted_by == 'price' %}
+                        {% blocktrans trimmed %}
+                          Sort by: <b>price</b>
+                        {% endblocktrans %}
+                      {% endif %}
                     </span>
                     <div class="sort-order-icon">
                       {% if is_descending %}
-                        <svg data-src="{% static "images/arrow_down.svg" %}">
+                        <svg data-src="{% static "images/arrow_down.svg" %}"/>
                       {% else %}
-                        <svg data-src="{% static "images/arrow_up.svg" %}">
+                        <svg data-src="{% static "images/arrow_up.svg" %}"/>
                       {% endif %}
                     </div>
                   </div>
@@ -113,9 +136,11 @@
         <div class="filters-menu__body d-none d-md-block">
           <h2>
             {% trans 'Filters' context 'Filter heading title' %}
-            <a href="?">
-              <span class="clear-filters float-right">{% trans 'Clear filters' context 'Category page filters' %}</span>
-            </a>
+            {% if filter.is_bound_unsorted %}
+              <a href=".">
+                <span class="clear-filters float-right">{% trans 'Clear filters' context 'Category page filters' %}</span>
+              </a>
+            {% endif %}
           </h2>
           <div class="product-filters">
             <div class="product-filters__attributes" data-icon-up="{% static "images/chevron_up.svg" %}"
