@@ -1,8 +1,6 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
 import decimal
 from json import JSONEncoder
+from urllib.parse import urljoin
 
 from babel.numbers import get_territory_currencies
 from django import forms
@@ -18,11 +16,6 @@ from geolite2 import geolite2
 from prices import PriceRange
 
 from ...userprofile.models import User
-
-try:
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin
 
 georeader = geolite2.reader()
 
@@ -42,10 +35,11 @@ class CategoryChoiceField(forms.ModelChoiceField):
         return '%s%s' % (indent, smart_text(obj))
 
 
-def build_absolute_uri(location, is_secure=False):
+def build_absolute_uri(location):
     # type: (str, bool, saleor.site.models.SiteSettings) -> str
     host = Site.objects.get_current().domain
-    current_uri = '%s://%s' % ('https' if is_secure else 'http', host)
+    protocol = 'https' if settings.ENABLE_SSL else 'http'
+    current_uri = '%s://%s' % (protocol, host)
     location = urljoin(current_uri, location)
     return iri_to_uri(location)
 

@@ -15,7 +15,7 @@
 {% block breadcrumb %}
     {% if order.user == user %}
     <ul class="breadcrumbs list-unstyled">
-        <li><a href="/">
+        <li><a href="{% url 'home' %}">
             {% trans "Home" context "Main navigation item" %}
         </a></li>
         <li><a href="{% url "profile:details" %}">
@@ -32,7 +32,7 @@
 
 {% block content %}
     <div class="row checkout">
-        <div class="col-lg-10 offset-lg-1">
+        <div class="col-lg-10 m-auto">
             {% if order.user == user or not order.is_fully_paid %}
                 {% if not order.is_fully_paid %}
                        {% if waiting_payment %}

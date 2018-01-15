@@ -1,21 +1,19 @@
 from __future__ import unicode_literals
+from json import dumps
+from urllib.parse import urlencode
 
 from django import forms
+from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.template import Library
 from django_filters.fields import RangeField
 from versatileimagefield.widgets import VersatileImagePPOIClickWidget
 
-try:
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib import urlencode
-
 from ...product.utils import get_margin_for_variant, get_variant_costs_data
+from ..product.widgets import ImagePreviewWidget
 from .chips import (
     handle_default, handle_multiple_choice, handle_multiple_model_choice,
     handle_nullboolean, handle_range, handle_single_choice,
     handle_single_model_choice)
-from ..product.widgets import ImagePreviewWidget
 
 register = Library()
 
@@ -79,7 +77,8 @@ def margins_for_variant(variant):
 
 
 @register.inclusion_tag('dashboard/includes/_filters.html', takes_context=True)
-def add_filters(context, filter_set, sort_by_filter_name='sort_by'):
+def filters(context, filter_set, sort_by_filter_name='sort_by'):
+    """Rendering filters template based on FilterSet."""
     chips = []
     request_get = context['request'].GET.copy()
     for filter_name in filter_set.form.cleaned_data.keys():
@@ -105,5 +104,52 @@ def add_filters(context, filter_set, sort_by_filter_name='sort_by'):
                 items = handle_default(field, request_get)
             chips.extend(items)
     return {
-        'chips': chips, 'filter': filter_set, 'count': filter_set.qs.count(),
+        'chips': chips, 'filter': filter_set,
         'sort_by': request_get.get(sort_by_filter_name, None)}
+
+
+@register.simple_tag(takes_context=True)
+def serialize_messages(context):
+    """Serialize django.contrib.messages to JSON"""
+    messages = context.get('messages', [])
+    data = {}
+    for i, message in enumerate(messages):
+        data[i] = str(message)
+    return dumps(data)
+
+
+@register.inclusion_tag(
+    'dashboard/includes/_sorting_header.html', takes_context=True)
+def sorting_header(context, field, label, is_wide=False):
+    """This template tag renders table sorting header."""
+    request = context['request']
+    request_get = request.GET.copy()
+    sort_by = request_get.get('sort_by')
+
+    # path to icon indicating applied sorting
+    sorting_icon = ''
+
+    # flag which determines if active sorting is on field
+    is_active = False
+
+    if sort_by:
+        is_active = True
+        if field == sort_by:
+            # enable ascending sort
+            # new_sort_by is used to construct a link with already toggled
+            # sort_by value
+            new_sort_by = '-%s' % field
+            sorting_icon = static('/images/arrow_up_icon.svg')
+        else:
+            # enable descending sort
+            new_sort_by = field
+            if field == sort_by.strip('-'):
+                sorting_icon = static('/images/arrow_down_icon.svg')
+    else:
+        new_sort_by = field
+
+    request_get['sort_by'] = new_sort_by
+    return {
+        'url': '%s?%s' % (request.path, request_get.urlencode()),
+        'is_active': is_active, 'sorting_icon': sorting_icon, 'label': label,
+        'is_wide': is_wide}

@@ -2,7 +2,6 @@
 {% load i18n %}
 {% load prices_i18n %}
 {% load materializecss %}
-{% load get_sort_by_toggle from shop %}
 {% load staticfiles %}
 {% load product_first_image from product_images %}
 {% load utils %}
@@ -18,13 +17,13 @@
 {% block header_extra %}
   {% if product_classes %}
     {% if perms.product.edit_product %}
-      <div class="fixed-action-btn">
+      <div class="btn-fab-fixed">
         {% if product_classes|length > 1 %}
-          <a class="btn-fab btn-floating btn-large waves-effect waves-light modal-trigger" href="#modal-product-class" title="{% trans "Add product" context "Product list add button text" %}">
+        <a data-href="{% url "dashboard:product-add-select-class" %}" class="btn-fab-default waves-effect waves-light modal-trigger-custom" href="#base-modal" title="{% trans "Add product" context "Product list add button text" %}">
             <svg data-src="{% static "dashboard/images/add.svg" %}" />
           </a>
         {% else %}
-          <a class="btn-fab btn-floating btn-large waves-effect waves-light modal-trigger" href="{% url 'dashboard:product-add' product_classes.0.pk %}" title="{% trans "Add product" context "Product list add button text" %}">
+          <a class="btn-fab-default waves-effect waves-light modal-trigger" href="{% url 'dashboard:product-add' product_classes.0.pk %}" title="{% trans "Add product" context "Product list add button text" %}">
             <svg data-src="{% static "dashboard/images/add.svg" %}" />
           </a>
         {% endif %}
@@ -59,7 +58,7 @@
               <ul class="right">
                 {% for action, label in bulk_action_form.action.field.widget.choices %}
                   <li>
-                    <a href="" data-action="{{ action }}" class="btn-flat">{{ label|upper }}</a>
+                    <a href="" data-action="{{ action }}" class="btn-flat waves-effect">{{ label|upper }}</a>
                   </li>
                 {% endfor %}
               </ul>
@@ -74,20 +73,11 @@
                 <label for="select-all-products"></label>
               </th>
               <th></th>
-              {% get_sort_by_toggle 'name' as toggle %}
-              <th class="wide {% if toggle.is_active %}active{% endif %}">
-                <a href="{{ toggle.url }}">
-                  <svg data-src="{{ toggle.sorting_icon }}" />
-                  {% trans "Name" context "Products list table header" %}
-                </a>
-              </th>
-              {% get_sort_by_toggle 'price' as toggle %}
-              <th class="wide {% if toggle.is_active %}active{% endif %}">
-                <a href="{{ toggle.url }}">
-                  <svg data-src="{{ toggle.sorting_icon }}" />
-                  {% trans "Price" context "Products list table header" %}
-                </a>
-              </th>
+              {% trans "Name" context "Products list table header" as label %}
+              {% sorting_header 'name' label is_wide=True %}
+
+              {% trans "Price" context "Products list table header" as label %}
+              {% sorting_header 'price' label is_wide=True %}
             </tr>
           </thead>
           <tbody>
@@ -117,40 +107,21 @@
       </div>
       {% paginate products %}
     {% else %}
-      <div class="col s12">
-        <div class="not-found">
-          <p class="grey-text">
-            {% trans "No products found." context "Empty product list message" %}
-          </p>
-          {% if not product_classes %}
+      {% if is_empty %}
+        {% include 'dashboard/product/zero_page.html' %}
+      {% else %}
+        <div class="col s12">
+          <div class="not-found">
             <p class="grey-text">
-              {% trans "Create product type first." context "Empty product list without product types message" %}
+              {% trans "No products found." context "Empty product list message" %}
             </p>
-          {% endif %}
+          </div>
         </div>
-      </div>
+      {% endif %}
     {% endif %}
     </div>
     <div class="col s12 l3" id="filters">
-      {% add_filters filter %}
+      {% if not is_empty %}{% filters filter_set %}{% endif %}
     </div>
-  </div>
-  <div id="modal-product-class" class="modal">
-    <form method="post" novalidate>
-      <div class="modal-content">
-        {% csrf_token %}
-        <div class="row">
-          {{ form|materializecss }}
-        </div>
-      </div>
-      <div class="modal-footer">
-        <a href="#!" class="modal-action modal-close btn-action-secondary">
-          {% trans "Cancel" context "Dashboard cancel action" %}
-        </a>
-        <button type="submit" class="modal-action btn-action-primary">
-          {% trans "Create new" context "Dashboard add action" %}
-        </button>
-      </div>
-    </form>
   </div>
 {% endblock %}
