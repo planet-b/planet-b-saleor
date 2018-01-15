@@ -1,14 +1,9 @@
-from __future__ import unicode_literals
-
-from django_filters import (
-    CharFilter, ChoiceFilter, ModelMultipleChoiceFilter, OrderingFilter)
 from django.contrib.auth.models import Group
-from django.utils.translation import pgettext_lazy
-from django import forms
+from django.utils.translation import pgettext_lazy, npgettext
+from django_filters import ModelMultipleChoiceFilter, OrderingFilter
 
-from ...core.utils.filters import filter_by_customer, filter_by_location
 from ...userprofile.models import User
-from ..filters import SortedFilterSet
+from ..customer.filters import UserFilter
 
 
 SORT_BY_FIELDS = (
@@ -24,27 +19,12 @@ SORT_BY_FIELDS_LABELS = {
     'default_billing_address__city': pgettext_lazy(
         'Customer list sorting option', 'location')}
 
-IS_ACTIVE_CHOICES = (
-    ('1', pgettext_lazy('Is active filter choice', 'Active')),
-    ('0', pgettext_lazy('Is active filter choice', 'Not active')))
 
-
-class StaffFilter(SortedFilterSet):
-    name_or_email = CharFilter(
-        label=pgettext_lazy('Staff list filter label', 'Name or email'),
-        method=filter_by_customer)
-    location = CharFilter(
-        label=pgettext_lazy('Staff list filter label', 'Location'),
-        method=filter_by_location)
+class StaffFilter(UserFilter):
     groups = ModelMultipleChoiceFilter(
         label=pgettext_lazy('Staff list filter label', 'Groups'),
         name='groups',
         queryset=Group.objects.all())
-    is_active = ChoiceFilter(
-        label=pgettext_lazy('Staff list filter label', 'Is active'),
-        choices=IS_ACTIVE_CHOICES,
-        empty_label=pgettext_lazy('Filter empty choice label', 'All'),
-        widget=forms.Select)
     sort_by = OrderingFilter(
         label=pgettext_lazy('Staff list filter label', 'Sort by'),
         fields=SORT_BY_FIELDS,
@@ -53,3 +33,11 @@ class StaffFilter(SortedFilterSet):
     class Meta:
         model = User
         fields = []
+
+    def get_summary_message(self):
+        counter = self.qs.count()
+        return npgettext(
+            'Number of matching records in the dashboard staff members list',
+            'Found %(counter)d matching staff member',
+            'Found %(counter)d matching staff members',
+            number=counter) % {'counter': counter}

@@ -1,7 +1,6 @@
 {% extends "dashboard/base.html" %}
 {% load i18n %}
 {% load materializecss %}
-{% load get_sort_by_toggle from shop %}
 {% load staticfiles %}
 {% load utils %}
 
@@ -16,8 +15,8 @@
 {% block header_extra %}
   {% if perms.userprofile.edit_group %}
 
-    <div class="fixed-action-btn">
-      <a class="btn-fab btn-floating btn-large waves-effect waves-light"
+    <div class="btn-fab-fixed">
+      <a class="btn-fab-default waves-effect waves-light"
         title="{% trans "Add group" context "Group list add button text" %}"
         href="{% url 'dashboard:group-create' %}">
         <svg data-src="{% static "dashboard/images/add.svg" %}" />
@@ -43,13 +42,8 @@
             <table class="bordered highlight data-table data-table-description">
               <thead>
                 <tr>
-                  {% get_sort_by_toggle 'name' as toggle %}
-                  <th class="{% if toggle.is_active %}active{% endif %}">
-                    <a href="{{ toggle.url }}">
-                      <svg data-src="{{ toggle.sorting_icon }}" />
-                      {% trans "Name" context "Dashboard groups list table header name" %}
-                    </a>
-                  </th>
+                  {% trans "Name" context "Dashboard groups list table header name" as label %}
+                  {% sorting_header 'name' label %}
                   <th>
                     {% trans "Permissions" context "Dashboard groups list table header permissions" %}
                   </th>
@@ -74,15 +68,21 @@
         </div>
         {% paginate groups %}
       {% else %}
-        <div class="card-content card-content--no-data not-found">
-          <p class="grey-text">
-            {% trans "No groups found." context "Empty group table message" %}
-          </p>
-        </div>
+        {% if is_empty %}
+          {% include 'dashboard/group/zero_page.html' %}
+        {% else %}
+          <div class="col s12">
+            <div class="not-found">
+              <p class="grey-text">
+                {% trans "No groups found." context "Empty group table message" %}
+              </p>
+            </div>
+          </div>
+        {% endif %}
       {% endif %}
     </div>
     <div class="col s12 l3" id="filters">
-      {% add_filters filter %}
+      {% if not is_empty %}{% filters filter_set %}{% endif %}
     </div>
   </div>
 {% endblock %}

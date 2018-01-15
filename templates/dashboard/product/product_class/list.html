@@ -2,7 +2,6 @@
 {% load i18n %}
 {% load prices_i18n %}
 {% load materializecss %}
-{% load get_sort_by_toggle from shop %}
 {% load staticfiles %}
 {% load utils %}
 
@@ -16,8 +15,8 @@
 
 {% block header_extra %}
   {% if perms.product.edit_properties %}
-  <div class="fixed-action-btn">
-    <a class="btn-fab btn-floating btn-large waves-effect waves-light" title="{% trans "Add product type" context "Product type list add button text" %}" href="{% url 'dashboard:product-class-add' %}">
+  <div class="btn-fab-fixed">
+    <a class="btn-fab-default waves-effect waves-light" title="{% trans "Add product type" context "Product type list add button text" %}" href="{% url 'dashboard:product-class-add' %}">
       <svg data-src="{% static "dashboard/images/add.svg" %}" />
     </a>
   </div>
@@ -43,13 +42,9 @@
             <table class="bordered highlight data-table data-table-description">
               <thead>
                 <tr>
-                  {% get_sort_by_toggle 'name' as toggle %}
-                  <th class="wide {% if toggle.is_active %}active{% endif %}">
-                    <a href="{{ toggle.url }}">
-                      <svg data-src="{{ toggle.sorting_icon }}" />
-                      {% trans "Name" context "Dashboard product types list table header name" %}
-                    </a>
-                  </th>
+                  {% trans "Name" context "Dashboard product types list table header name" as label %}
+                  {% sorting_header 'name' label is_wide=True %}
+
                   <th>
                     {% trans "Product attributes" context "Product type item list text" %}
                   </th>
@@ -86,15 +81,21 @@
         </div>
         {% paginate product_classes %}
       {% else %}
-        <div class="not-found">
-          <p class="grey-text">
-            {% trans "No product types found." context "Empty product type list message" %}
-          </p>
-        </div>
+        {% if is_empty %}
+          {% include 'dashboard/product/product_class/zero_page.html' %}
+        {% else %}
+          <div class="col s12">
+            <div class="not-found">
+              <p class="grey-text">
+                {% trans "No product types found." context "Empty product type list message" %}
+              </p>
+            </div>
+          </div>
+        {% endif %}
       {% endif %}
     </div>
     <div class="col s12 l3" id="filters">
-      {% add_filters filter %}
+      {% if not is_empty %}{% filters filter_set %}{% endif %}
     </div>
   </div>
   <div id="modal-product-class" class="modal">
@@ -106,7 +107,7 @@
         </div>
         <div class="row">
           <div class="col s12">
-            <button class="btn" type="submit">
+            <button class="btn waves-effect" type="submit">
               {% trans "Create new" context "Dashboard create new action"  %}
             </button>
           </div>

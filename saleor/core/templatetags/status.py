@@ -4,8 +4,7 @@ from django.template import Library
 from payments import PaymentStatus
 
 from ...order import OrderStatus
-from ...product import (
-    ProductAvailabilityStatus, VariantAvailabilityStatus)
+from ...product import ProductAvailabilityStatus, VariantAvailabilityStatus
 from ...product.utils import (
     get_product_availability_status, get_variant_availability_status)
 
@@ -13,9 +12,7 @@ register = Library()
 
 
 ERRORS = {PaymentStatus.ERROR, PaymentStatus.REJECTED}
-SUCCESSES = {
-    OrderStatus.FULLY_PAID, OrderStatus.SHIPPED,
-    PaymentStatus.CONFIRMED, PaymentStatus.REFUNDED}
+SUCCESSES = {PaymentStatus.CONFIRMED, PaymentStatus.REFUNDED}
 
 
 LABEL_DANGER = 'danger'
