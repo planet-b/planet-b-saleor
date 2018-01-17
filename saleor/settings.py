@@ -437,6 +437,3 @@ IMPERSONATE = {
     'USE_HTTP_REFERER': True,
     'CUSTOM_ALLOW': 'saleor.userprofile.impersonate.can_impersonate'
 }
-# Override production variables if DJANGO_DEVELOPMENT env variable is set
-if os.environ.get('DJANGO_DEVELOPMENT') is not None:
-    from .settings_dev import *
