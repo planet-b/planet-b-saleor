@@ -1,0 +1,21 @@
+{% extends "dashboard/base_modal.html" %}
+
+{% load i18n %}
+{% load materializecss %}
+
+{% block action_url %}
+{% url 'dashboard:ship-delivery-group' order_pk=order.pk group_pk=group.pk %}
+{% endblock %}
+
+{% block title %}
+{% trans "Dispatch shipment group" context "Modal ship shipment group title" %}
+{% endblock %}
+
+{% block content %}
+{% trans "Dispatch this shipment to the following address:" context "Modal ship shipment group text" %}
+{{ form|materializecss }}
+{% endblock %}
+
+{% block primary_action %}
+{% trans "Ship" context "Modal ship shipment group primary action" %}
+{% endblock %}

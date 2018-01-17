@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import get_template
@@ -29,12 +27,10 @@ def _create_pdf(rendered_template, absolute_url):
 
 def create_invoice_pdf(order_pk, absolute_url):
     order = (Order.objects.prefetch_related(
-        'user', 'shipping_address',
-        'billing_address', 'voucher', 'groups').get(
-        pk=order_pk))
+        'user', 'shipping_address', 'billing_address', 'voucher',
+        'groups').get(pk=order_pk))
     shipping_methods = [
-        {'name': d.shipping_method_name,
-         'price': d.shipping_price} for d in order.groups.all()]
+        {'name': d.shipping_method_name} for d in order.groups.all()]
     ctx = {'order': order, 'shipping_methods': shipping_methods}
     rendered_template = get_template(INVOICE_TEMPLATE).render(ctx)
     pdf_file = _create_pdf(rendered_template, absolute_url)
@@ -43,7 +39,7 @@ def create_invoice_pdf(order_pk, absolute_url):
 
 def create_packing_slip_pdf(group_pk, absolute_url):
     group = (DeliveryGroup.objects.prefetch_related(
-        'items', 'order', 'order__user', 'order__shipping_address',
+        'lines', 'order', 'order__user', 'order__shipping_address',
         'order__billing_address').get(pk=group_pk))
     ctx = {'group': group}
     rendered_template = get_template(PACKING_SLIP_TEMPLATE).render(ctx)
