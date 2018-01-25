@@ -1,11 +1,25 @@
-1) Install Anaconda
-2) Create the python environment
+() Install nodejs
+() On nodejs
+	[] Install the webpack from nodejs
+		npm i webpack -g
+	[] Install the windows dev kit
+		npm install --global --production windows-build-tools	
+
+() Install Anaconda
+() Create the python environment
 		conda update conda
 		conda create --name planet-b python=3.5 #planet-b is just a name
-3) Activate the Anaconda environment
+() Activate the Anaconda environment
 		activate planet-b
-4) Clone the planet-b repo
-5) Inside of the root folder of the repo and if you're on windows
+() Clone the planet-b repo
+() Inside of the root folder of the repo and if you're on windows
 		requirements.in 
 			comment out   "uwsgi>=2.0.0"
 		requirements.txt  "uwsgi==2.0.15"
+	[] pip install -r requirements.in
+	[] pip install -r requirements.txt
+	[] npm install
+() Do more stuff STUCK HERE!!!!
+		python manage.py migrate
+		npm run build-assets
+		python manage.py runserver
