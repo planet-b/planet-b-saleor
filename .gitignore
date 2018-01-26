@@ -29,8 +29,8 @@ dist/
 /static/
 /saleor/static/assets/
 webpack-bundle.json
-
 *.orig
+*.mo
 
 ############################# SublimeText #############################
 
