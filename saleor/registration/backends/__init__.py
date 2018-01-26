@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from ...site.utils import get_authorization_key_for_backend
 
 
