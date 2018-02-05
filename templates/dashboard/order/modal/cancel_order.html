@@ -1,0 +1,26 @@
+{% extends "dashboard/base_modal.html" %}
+
+{% load i18n %}
+{% load materializecss %}
+
+{% block action_url %}
+{% url 'dashboard:order-cancel' order_pk=order.pk %}
+{% endblock %}
+
+{% block title %}
+{% trans "Cancel order" trimmed with order=order context "Modal cancel order title" %}
+{% endblock %}
+
+{% block content %}
+{% blocktrans trimmed with order=order context "Modal cancel order text" %}
+  Are you sure you want cancel order {{ order }}?
+{% endblocktrans %}
+{% endblock %}
+
+{% block cancel_action %}
+{% trans "Abort" context "Modal cancel order cancel action" %}
+{% endblock %}
+
+{% block primary_action %}
+{% trans "Cancel Order" context "Modal cancel order primary action" %}
+{% endblock %}

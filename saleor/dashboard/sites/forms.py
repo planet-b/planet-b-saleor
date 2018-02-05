@@ -10,11 +10,6 @@ class SiteForm(forms.ModelForm):
         exclude = []
 
 
-    class Meta:
-        model = Site
-        exclude = ['site']
-
-
 class SiteSettingsForm(forms.ModelForm):
     class Meta:
         model = SiteSettings
