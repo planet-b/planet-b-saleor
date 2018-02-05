@@ -12,7 +12,11 @@ Contents:
    configuration
    products
    stock
+   orders
    settings
+   contentsearch
+   localization
+   seo
    payments
    integrations
    development

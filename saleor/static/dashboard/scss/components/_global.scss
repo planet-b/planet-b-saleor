@@ -145,3 +145,48 @@ li#version-indicator {
     color: unset;
   }
 }
+
+.main {
+  form {
+    .input-field {
+      label {
+        height: auto;
+        pointer-events: auto;
+
+        &:not(.label-icon) {
+          transform: none;
+        }
+      }
+    }
+  }
+}
+
+.address {
+  margin-bottom: 1rem;
+  .phone-number {
+    margin-left: .5rem;
+    color: unset;
+  }
+}
+
+svg {
+  &.fill {
+    &-primary {
+      fill: $primary-color;
+    }
+    &-secondary {
+      fill: $secondary-color;
+    }
+  }
+}
+
+.chips-container {
+  margin-top: 18px;
+  a {
+    color: #999;
+  }
+}
+
+.waves-effect.waves-lightgray .waves-ripple {
+  background-color: rgba(0, 0, 0, 0.05);
+}

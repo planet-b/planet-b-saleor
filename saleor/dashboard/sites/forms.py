@@ -10,7 +10,12 @@ class SiteForm(forms.ModelForm):
         exclude = []
 
 
-class SiteSettingForm(forms.ModelForm):
+    class Meta:
+        model = Site
+        exclude = ['site']
+
+
+class SiteSettingsForm(forms.ModelForm):
     class Meta:
         model = SiteSettings
         exclude = ['site']
@@ -22,8 +27,4 @@ class AuthorizationKeyForm(forms.ModelForm):
         exclude = []
         widgets = {'password': forms.PasswordInput(render_value=True),
                    'key': forms.TextInput(),
-                   'site_settings': forms.HiddenInput()}
-
-
-AuthorizationKeyFormSet = forms.modelformset_factory(
-    AuthorizationKey, form=AuthorizationKeyForm, can_delete=True)
+                   'site_settings': forms.widgets.HiddenInput()}

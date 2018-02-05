@@ -1,6 +1,5 @@
 """Checkout session state management."""
-from __future__ import unicode_literals
-
+from datetime import date
 from functools import wraps
 
 from django.conf import settings
@@ -15,15 +14,17 @@ from ..cart.utils import get_or_empty_db_cart
 from ..core import analytics
 from ..discount.models import NotApplicable, Voucher
 from ..order.models import Order
-from ..order.utils import add_items_to_delivery_group
+from ..order.utils import fill_group_with_partition
 from ..shipping.models import ANY_COUNTRY, ShippingMethodCountry
 from ..userprofile.models import Address
 from ..userprofile.utils import store_user_address
 
+from phonenumber_field.phonenumber import PhoneNumber
+
 STORAGE_SESSION_KEY = 'checkout_storage'
 
 
-class Checkout(object):
+class Checkout:
     """Represents a checkout session.
 
     This object acts a temporary storage for the entire checkout session. An
@@ -96,7 +97,7 @@ class Checkout(object):
 
     @property
     def deliveries(self):
-        """Return the cart split into delivery groups.
+        """Return the cart split into shipment groups.
 
         Generates tuples consisting of a partition, its shipping cost and its
         total cost.
@@ -133,6 +134,9 @@ class Checkout(object):
     @shipping_address.setter
     def shipping_address(self, address):
         address_data = model_to_dict(address)
+        phone_number = address_data.get('phone')
+        if phone_number:
+            address_data['phone'] = str(address_data['phone'])
         address_data['country'] = smart_text(address_data['country'])
         self.storage['shipping_address'] = address_data
         self.modified = True
@@ -276,7 +280,8 @@ class Checkout(object):
         """
         # FIXME: save locale along with the language
         voucher = self._get_voucher(
-            vouchers=Voucher.objects.active().select_for_update())
+            vouchers=Voucher.objects.active(date=date.today())
+                            .select_for_update())
         if self.voucher_code is not None and voucher is None:
             # Voucher expired in meantime, abort order placement
             return
@@ -291,11 +296,15 @@ class Checkout(object):
         self._add_to_user_address_book(
             self.billing_address, is_billing=True)
 
+        shipping_price = (
+            self.shipping_method.get_total() if self.shipping_method
+            else Price(0, currency=settings.DEFAULT_CURRENCY))
         order_data = {
             'language_code': get_language(),
             'billing_address': billing_address,
             'shipping_address': shipping_address,
             'tracking_client_id': self.tracking_code,
+            'shipping_price': shipping_price,
             'total': self.get_total()}
 
         if self.user.is_authenticated:
@@ -315,16 +324,12 @@ class Checkout(object):
 
         for partition in self.cart.partition():
             shipping_required = partition.is_shipping_required()
-            if shipping_required:
-                shipping_price = self.shipping_method.get_total()
-                shipping_method_name = smart_text(self.shipping_method)
-            else:
-                shipping_price = 0
-                shipping_method_name = None
+            shipping_method_name = (
+                smart_text(self.shipping_method) if shipping_required
+                else None)
             group = order.groups.create(
-                shipping_price=shipping_price,
                 shipping_method_name=shipping_method_name)
-            add_items_to_delivery_group(
+            fill_group_with_partition(
                 group, partition, discounts=self.cart.discounts)
 
         if voucher is not None:
@@ -336,7 +341,7 @@ class Checkout(object):
         voucher_code = self.voucher_code
         if voucher_code is not None:
             if vouchers is None:
-                vouchers = Voucher.objects.active()
+                vouchers = Voucher.objects.active(date=date.today())
             try:
                 return vouchers.get(code=self.voucher_code)
             except Voucher.DoesNotExist:
@@ -377,15 +382,6 @@ class Checkout(object):
         total = sum(cost_iterator, zero)
         return total if self.discount is None else self.discount.apply(total)
 
-    def get_total_shipping(self):
-        """Calculate shipping total."""
-        zero = Price(0, currency=settings.DEFAULT_CURRENCY)
-        cost_iterator = (
-            shipping_cost
-            for shipment, shipping_cost, total in self.deliveries)
-        total = sum(cost_iterator, zero)
-        return total
-
 
 def load_checkout(view):
     """Decorate view with checkout session and cart for each request.
@@ -403,7 +399,6 @@ def load_checkout(view):
         except KeyError:
             session_data = ''
         tracking_code = analytics.get_client_id(request)
-
         checkout = Checkout.from_storage(
             session_data, cart, request.user, tracking_code)
         response = view(request, checkout, cart)

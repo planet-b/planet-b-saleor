@@ -1,33 +1,27 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
 from decimal import Decimal
-import pytest
-
 from io import BytesIO
-from PIL import Image
+from unittest.mock import MagicMock
 
-from django.contrib.auth.models import AnonymousUser
-from django.contrib.sites.models import Site
-from django.utils.encoding import smart_text
-from django.core.files.uploadedfile import SimpleUploadedFile
+import pytest
 from django.contrib.auth.models import AnonymousUser, Group, Permission
+from django.contrib.sites.models import Site
 from django.core.files import File
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.encoding import smart_text
-
-from mock import MagicMock
+from PIL import Image
 
 from saleor.cart import utils
 from saleor.cart.models import Cart
 from saleor.checkout.core import Checkout
-from saleor.discount.models import Voucher, Sale
-from saleor.order.models import Order, OrderedItem, DeliveryGroup
-from saleor.product.models import (AttributeChoiceValue, Category, Product,
-                                   ProductAttribute, ProductClass,
-                                   ProductVariant, ProductImage, Stock,
-                                   StockLocation)
+from saleor.discount.models import Sale, Voucher
+from saleor.order import GroupStatus
+from saleor.order.models import DeliveryGroup, Order, OrderLine
+from saleor.order.utils import recalculate_order
+from saleor.product.models import (
+    AttributeChoiceValue, Category, Product, ProductAttribute, ProductClass,
+    ProductImage, ProductVariant, Stock, StockLocation)
 from saleor.shipping.models import ShippingMethod
-from saleor.site.models import SiteSettings, AuthorizationKey
+from saleor.site.models import AuthorizationKey, SiteSettings
 from saleor.userprofile.models import Address, User
 
 
@@ -285,15 +279,32 @@ def product_list(product_class, default_category):
 
     product_1 = Product.objects.create(
         name='Test product 1', price=Decimal('10.00'),
-        product_class=product_class, attributes=attributes)
+        product_class=product_class, attributes=attributes, is_published=True)
     product_1.categories.add(default_category)
 
     product_2 = Product.objects.create(
         name='Test product 2', price=Decimal('20.00'),
-        product_class=product_class, attributes=attributes)
+        product_class=product_class, attributes=attributes, is_published=False)
     product_2.categories.add(default_category)
 
-    return [product_1, product_2]
+    product_3 = Product.objects.create(
+        name='Test product 3', price=Decimal('20.00'),
+        product_class=product_class, attributes=attributes, is_published=True)
+    product_3.categories.add(default_category)
+
+    return [product_1, product_2, product_3]
+
+from prices import Price
+@pytest.fixture
+def order_list(admin_user, billing_address):
+    data = {
+        'billing_address': billing_address, 'user': admin_user,
+        'user_email': admin_user.email, 'total': Price(123, currency='USD')}
+    order = Order.objects.create(**data)
+    order1 = Order.objects.create(**data)
+    order2 = Order.objects.create(**data)
+
+    return [order, order1, order2]
 
 
 @pytest.fixture
@@ -353,13 +364,13 @@ def voucher(db):  # pylint: disable=W0613
 
 
 @pytest.fixture()
-def order_with_items(order, product_class):
+def order_with_lines(order, product_class):
     group = DeliveryGroup.objects.create(order=order)
     product = Product.objects.create(
         name='Test product', price=Decimal('10.00'),
         product_class=product_class)
 
-    OrderedItem.objects.create(
+    OrderLine.objects.create(
         delivery_group=group,
         product=product,
         product_name=product.name,
@@ -372,7 +383,7 @@ def order_with_items(order, product_class):
         name='Test product 2', price=Decimal('20.00'),
         product_class=product_class)
 
-    OrderedItem.objects.create(
+    OrderLine.objects.create(
         delivery_group=group,
         product=product,
         product_name=product.name,
@@ -385,7 +396,7 @@ def order_with_items(order, product_class):
         name='Test product 3', price=Decimal('30.00'),
         product_class=product_class)
 
-    OrderedItem.objects.create(
+    OrderLine.objects.create(
         delivery_group=group,
         product=product,
         product_name=product.name,
@@ -399,7 +410,7 @@ def order_with_items(order, product_class):
 
 
 @pytest.fixture()
-def order_with_items_and_stock(order, product_class):
+def order_with_lines_and_stock(order, product_class):
     group = DeliveryGroup.objects.create(order=order)
     product = Product.objects.create(
         name='Test product', price=Decimal('10.00'),
@@ -409,7 +420,7 @@ def order_with_items_and_stock(order, product_class):
     stock = Stock.objects.create(
         variant=variant, cost_price=1, quantity=5, quantity_allocated=3,
         location=warehouse)
-    OrderedItem.objects.create(
+    OrderLine.objects.create(
         delivery_group=group,
         product=product,
         product_name=product.name,
@@ -417,7 +428,8 @@ def order_with_items_and_stock(order, product_class):
         quantity=3,
         unit_price_net=Decimal('30.00'),
         unit_price_gross=Decimal('30.00'),
-        stock=stock
+        stock=stock,
+        stock_location=stock.location.name
     )
     product = Product.objects.create(
         name='Test product 2', price=Decimal('20.00'),
@@ -426,7 +438,7 @@ def order_with_items_and_stock(order, product_class):
     stock = Stock.objects.create(
         variant=variant, cost_price=2, quantity=2, quantity_allocated=2,
         location=warehouse)
-    OrderedItem.objects.create(
+    OrderLine.objects.create(
         delivery_group=group,
         product=product,
         product_name=product.name,
@@ -434,11 +446,38 @@ def order_with_items_and_stock(order, product_class):
         quantity=2,
         unit_price_net=Decimal('20.00'),
         unit_price_gross=Decimal('20.00'),
-        stock=stock
+        stock=stock,
+        stock_location=stock.location.name
     )
-    Order.objects.recalculate_order(order)
+    recalculate_order(order)
     order.refresh_from_db()
     return order
+
+
+@pytest.fixture()
+def order_with_variant_from_different_stocks(order_with_lines_and_stock):
+    line = OrderLine.objects.get(product_sku='SKU_A')
+    variant = ProductVariant.objects.get(sku=line.product_sku)
+    warehouse_2 = StockLocation.objects.create(name='Warehouse 2')
+    stock = Stock.objects.create(
+        variant=variant, cost_price=1, quantity=5, quantity_allocated=2,
+        location=warehouse_2)
+    OrderLine.objects.create(
+        delivery_group=line.delivery_group,
+        product=variant.product,
+        product_name=variant.product.name,
+        product_sku=line.product_sku,
+        quantity=2,
+        unit_price_net=Decimal('30.00'),
+        unit_price_gross=Decimal('30.00'),
+        stock=stock,
+        stock_location=stock.location.name
+    )
+    warehouse_2 = StockLocation.objects.create(name='Warehouse 3')
+    Stock.objects.create(
+        variant=variant, cost_price=1, quantity=5, quantity_allocated=0,
+        location=warehouse_2)
+    return order_with_lines_and_stock
 
 
 @pytest.fixture()
@@ -453,3 +492,103 @@ def authorization_key(db, site_settings):
     return AuthorizationKey.objects.create(
         site_settings=site_settings, name='Backend', key='Key',
         password='Password')
+
+
+@pytest.fixture
+def permission_view_staff():
+    return Permission.objects.get(codename='view_staff')
+
+
+@pytest.fixture
+def permission_edit_staff():
+    return Permission.objects.get(codename='edit_staff')
+
+
+@pytest.fixture
+def permission_view_group():
+    return Permission.objects.get(codename='view_group')
+
+
+@pytest.fixture
+def permission_edit_group():
+    return Permission.objects.get(codename='edit_group')
+
+
+@pytest.fixture
+def permission_view_properties():
+    return Permission.objects.get(codename='view_properties')
+
+
+@pytest.fixture
+def permission_edit_properties():
+    return Permission.objects.get(codename='edit_properties')
+
+
+@pytest.fixture
+def permission_view_shipping():
+    return Permission.objects.get(codename='view_shipping')
+
+
+@pytest.fixture
+def permission_edit_shipping():
+    return Permission.objects.get(codename='edit_shipping')
+
+
+@pytest.fixture
+def permission_edit_user():
+    return Permission.objects.get(codename='edit_user')
+
+
+@pytest.fixture
+def permission_edit_settings():
+    return Permission.objects.get(codename='edit_settings')
+
+
+@pytest.fixture
+def permission_impersonate_user():
+    return Permission.objects.get(codename='impersonate_user')
+
+
+@pytest.fixture
+def open_orders(billing_address):
+    orders = []
+    group_data = lambda orders, status: {'order': orders[-1], 'status': status}
+
+    orders.append(Order.objects.create(billing_address=billing_address))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.NEW))
+
+    orders.append(Order.objects.create(billing_address=billing_address))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.NEW))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.CANCELLED))
+
+    orders.append(Order.objects.create(billing_address=billing_address))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.NEW))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.SHIPPED))
+
+    orders.append(Order.objects.create(billing_address=billing_address))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.NEW))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.SHIPPED))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.CANCELLED))
+
+    return orders
+
+
+@pytest.fixture
+def closed_orders(billing_address):
+    orders = []
+    group_data = lambda orders, status: {'order': orders[-1], 'status': status}
+
+    orders.append(Order.objects.create(billing_address=billing_address))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.SHIPPED))
+
+    orders.append(Order.objects.create(billing_address=billing_address))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.SHIPPED))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.CANCELLED))
+
+    orders.append(Order.objects.create(billing_address=billing_address))
+    DeliveryGroup.objects.create(**group_data(orders, GroupStatus.CANCELLED))
+
+    # empty order is considered as closed
+    orders.append(Order.objects.create(billing_address=billing_address))
+
+    return orders

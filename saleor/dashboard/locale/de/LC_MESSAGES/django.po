@@ -2,20 +2,20 @@
 # Copyright (C) 2017 Mirumee Software
 # This file is distributed under the same license as the Saleor package.
 # Mirumee Software <hello@mirumee.com>, 2017.
-#
+# 
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: master\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-10-11 08:30-0500\n"
+"POT-Creation-Date: 2017-11-27 16:26-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Rapahel Wierscher <rapwie@gmail.com>, 2017\n"
 "Language-Team: German (https://www.transifex.com/mirumee/teams/34782/de/)\n"
-"Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: saleor/dashboard/category/views.py:42
@@ -33,8 +33,14 @@ msgstr "Kategorie %s geändert"
 #: saleor/dashboard/category/views.py:84
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted category %s"
-msgstr "Kategorie %s gelöscht"
+msgid "Removed category %s"
+msgstr ""
+
+#: saleor/dashboard/customer/views.py:55
+#, python-format
+msgctxt "Dashboard message"
+msgid "Customer %s promoted to staff member"
+msgstr "Kunde %s wurde als Mitarbeiter angelegt"
 
 #: saleor/dashboard/discount/forms.py:25
 msgctxt "Sale (discount) error"
@@ -69,53 +75,41 @@ msgstr "Angebot hinzugefügt"
 #: saleor/dashboard/discount/views.py:53
 #, python-format
 msgctxt "Sale (discount) message"
-msgid "Deleted sale %s"
-msgstr "Angebot %s gelöscht"
+msgid "Removed sale %s"
+msgstr ""
 
-#: saleor/dashboard/discount/views.py:102
+#: saleor/dashboard/discount/views.py:103
 msgctxt "Voucher message"
 msgid "Updated voucher"
 msgstr "Rabattcode geändert"
 
-#: saleor/dashboard/discount/views.py:103
+#: saleor/dashboard/discount/views.py:104
 msgctxt "Voucher message"
 msgid "Added voucher"
 msgstr "Rabattcode hinzugefügt"
 
-#: saleor/dashboard/discount/views.py:121
+#: saleor/dashboard/discount/views.py:122
 #, python-format
 msgctxt "Voucher message"
-msgid "Deleted voucher %s"
-msgstr "Rabattcode %s gelöscht"
+msgid "Removed voucher %s"
+msgstr ""
 
-#: saleor/dashboard/group/views.py:30
-#, fuzzy
-#| msgctxt "Dashboard message related to a delivery group"
-#| msgid "removed group"
+#: saleor/dashboard/group/views.py:37
 msgctxt "Dashboard message"
 msgid "Created group"
-msgstr "Gruppe gelöscht"
+msgstr "Gruppe wurde erstellt"
 
-#: saleor/dashboard/group/views.py:44
-#, fuzzy, python-format
-#| msgctxt "Dashboard message"
-#| msgid "Updated product %s"
+#: saleor/dashboard/group/views.py:52
+#, python-format
 msgctxt "Dashboard message"
 msgid "Updated group %s"
-msgstr "Produkt %s geändert"
+msgstr "Gruppe %s aktualisiert"
 
-#: saleor/dashboard/group/views.py:58
-#, fuzzy, python-format
-#| msgctxt "Dashboard message"
-#| msgid "Deleted product %s"
+#: saleor/dashboard/group/views.py:67
+#, python-format
 msgctxt "Dashboard message"
-msgid "Deleted group %s"
-msgstr "Produkt %s gelöscht"
-
-#: saleor/dashboard/order/forms.py:27
-msgctxt "Order note form placeholder"
-msgid "Note"
-msgstr "Notiz"
+msgid "Removed group %s"
+msgstr ""
 
 #: saleor/dashboard/order/forms.py:36
 msgctxt "Payment management form (capture, refund, release)"
@@ -160,14 +154,11 @@ msgid "New shipment"
 msgstr "Neuer Versand"
 
 #: saleor/dashboard/order/forms.py:172
-#, fuzzy
-#| msgctxt "Move items form label"
-#| msgid "Quantity"
 msgctxt "Change quantity form label"
 msgid "Quantity"
-msgstr "Anzahl"
+msgstr "Menge"
 
-#: saleor/dashboard/order/forms.py:194
+#: saleor/dashboard/order/forms.py:192
 #, python-format
 msgctxt "Change quantity form error"
 msgid "Only %(remaining)d remaining in stock."
@@ -178,7 +169,7 @@ msgstr[1] "Nur noch %(remaining)d auf Lager."
 #: saleor/dashboard/order/forms.py:220
 msgctxt "Ship group form field placeholder"
 msgid "Parcel tracking number"
-msgstr "Trackingnummer des Paktes"
+msgstr "Sendungsnummer"
 
 #: saleor/dashboard/order/forms.py:227
 msgctxt "Ship group form error"
@@ -205,24 +196,30 @@ msgctxt "Payment status field value"
 msgid "All"
 msgstr "Alle"
 
-#: saleor/dashboard/order/views.py:93
+#: saleor/dashboard/order/forms.py:337
+#, python-format
+msgctxt "Change stock form error"
+msgid "Only %(remaining)d remaining in this stock."
+msgstr ""
+
+#: saleor/dashboard/order/views.py:96
 msgctxt "Dashboard message related to an order"
 msgid "Added note"
 msgstr "Notiz hinzugefügt"
 
-#: saleor/dashboard/order/views.py:116
+#: saleor/dashboard/order/views.py:119
 #, python-format
 msgctxt "Dashboard message related to a payment"
 msgid "Captured %(amount)s"
 msgstr "%(amount)s abgerufen"
 
-#: saleor/dashboard/order/views.py:139
+#: saleor/dashboard/order/views.py:142
 #, python-format
 msgctxt "Dashboard message related to a payment"
 msgid "Refunded %(amount)s"
 msgstr "%(amount)s erstattet"
 
-#: saleor/dashboard/order/views.py:157
+#: saleor/dashboard/order/views.py:160
 msgctxt "Dashboard message"
 msgid "Released payment"
 msgstr "Betrag freigegeben"
@@ -287,6 +284,22 @@ msgctxt "Dashboard message"
 msgid "Removed voucher from order"
 msgstr "Rabattcode aus Bestellung gelöscht"
 
+#: saleor/dashboard/order/views.py:404
+#, python-format
+msgctxt "Dashboard message"
+msgid "Stock location changed for %s"
+msgstr ""
+
+#: saleor/dashboard/product/__init__.py:10
+msgctxt "product bulk action"
+msgid "Publish"
+msgstr ""
+
+#: saleor/dashboard/product/__init__.py:11
+msgctxt "product bulk action"
+msgid "Unpublish"
+msgstr ""
+
 #: saleor/dashboard/product/forms.py:25
 msgctxt "Product class form label"
 msgid "Product type"
@@ -296,6 +309,7 @@ msgstr "Produkttyp"
 msgctxt "stock form error"
 msgid "Stock item for this location and variant already exists"
 msgstr ""
+"Es gibt schon einen Lagerbestand für diese Variante in diesem Lagerort"
 
 #: saleor/dashboard/product/forms.py:62
 msgctxt "Product class form label"
@@ -326,153 +340,221 @@ msgstr "Einige Produkte diesen Typs haben mehr als eine Variante."
 #: saleor/dashboard/product/forms.py:106
 msgctxt "product form"
 msgid "Published"
-msgstr ""
+msgstr "Veröffentlicht"
 
 #: saleor/dashboard/product/forms.py:108
 msgctxt "product form"
 msgid "Feature this product on homepage"
-msgstr ""
+msgstr "Dieses Produkt auf der Homepage hervorheben"
 
 #: saleor/dashboard/product/forms.py:114
 msgctxt "Product form placeholder"
 msgid "Search"
 msgstr "Suche"
 
-#: saleor/dashboard/product/views.py:50
+#: saleor/dashboard/product/views.py:52
 #, python-format
 msgctxt "Dashboard message"
 msgid "Added product type %s"
 msgstr "Produkttyp %s hinzugefügt"
 
-#: saleor/dashboard/product/views.py:69
+#: saleor/dashboard/product/views.py:72
 #, python-format
 msgctxt "Dashboard message"
 msgid "Updated product type %s"
 msgstr "Produkttyp %s geändert"
 
-#: saleor/dashboard/product/views.py:88
+#: saleor/dashboard/product/views.py:92
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted product type %s"
-msgstr "Produkttyp %s gelöscht"
+msgid "Removed product type %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:139
+#: saleor/dashboard/product/views.py:145
 #, python-format
 msgctxt "Dashboard message"
 msgid "Added product %s"
 msgstr "Produkt %s hinzugefügt"
 
-#: saleor/dashboard/product/views.py:211
+#: saleor/dashboard/product/views.py:220
 #, python-format
 msgctxt "Dashboard message"
 msgid "Updated product %s"
 msgstr "Produkt %s geändert"
 
-#: saleor/dashboard/product/views.py:227
+#: saleor/dashboard/product/views.py:236
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted product %s"
-msgstr "Produkt %s gelöscht"
+msgid "Removed product %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:262
+#: saleor/dashboard/product/views.py:271
 msgctxt "Dashboard message"
 msgid "Saved stock"
 msgstr "Bestand gespeichert"
 
-#: saleor/dashboard/product/views.py:283
+#: saleor/dashboard/product/views.py:292
 msgctxt "Dashboard message"
-msgid "Deleted stock"
-msgstr "Bestand gelöscht"
+msgid "Removed stock"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:321
+#: saleor/dashboard/product/views.py:330
 #, python-format
 msgctxt "Dashboard message"
 msgid "Updated image %s"
 msgstr "Bild %s geändert"
 
-#: saleor/dashboard/product/views.py:325
+#: saleor/dashboard/product/views.py:334
 #, python-format
 msgctxt "Dashboard message"
 msgid "Added image %s"
 msgstr "Bild %s hinzugefügt"
 
-#: saleor/dashboard/product/views.py:346
+#: saleor/dashboard/product/views.py:355
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted image %s"
-msgstr "Bild %s gelöscht"
+msgid "Removed image %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:370
-#, fuzzy, python-format
-#| msgctxt "Dashboard message"
-#| msgid "Updated variant %s"
+#: saleor/dashboard/product/views.py:379
+#, python-format
 msgctxt "Dashboard message"
 msgid "Saved variant %s"
-msgstr "Variant %s geändert"
+msgstr "Variante %s gespeichert"
 
-#: saleor/dashboard/product/views.py:437
+#: saleor/dashboard/product/views.py:448
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted variant %s"
-msgstr "Variante %s gelöscht"
+msgid "Removed variant %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:486
+#: saleor/dashboard/product/views.py:497
 msgctxt "Dashboard message"
 msgid "Updated attribute"
 msgstr "Attibut geändert"
 
-#: saleor/dashboard/product/views.py:487
+#: saleor/dashboard/product/views.py:498
 msgctxt "Dashboard message"
 msgid "Added attribute"
 msgstr "Attribut hinsugefügt"
 
-#: saleor/dashboard/product/views.py:506
+#: saleor/dashboard/product/views.py:518
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted attribute %s"
-msgstr "Attribut %s gelöscht"
+msgid "Removed attribute %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:539
+#: saleor/dashboard/product/views.py:540
+msgctxt "Dashboard message"
+msgid "Updated attribute's value"
+msgstr ""
+
+#: saleor/dashboard/product/views.py:542
+msgctxt "Dashboard message"
+msgid "Added attribute's value"
+msgstr ""
+
+#: saleor/dashboard/product/views.py:562
+#, python-format
+msgctxt "Dashboard message"
+msgid "Removed attribute's value %s"
+msgstr ""
+
+#: saleor/dashboard/product/views.py:595
 msgctxt "Dashboard message for stock location"
 msgid "Updated location"
 msgstr "Ort geändert"
 
-#: saleor/dashboard/product/views.py:540
+#: saleor/dashboard/product/views.py:596
 msgctxt "Dashboard message for stock location"
 msgid "Added location"
 msgstr "Ort hinzugefügt"
 
-#: saleor/dashboard/product/views.py:559
+#: saleor/dashboard/product/views.py:615
 #, python-format
 msgctxt "Dashboard message for stock location"
-msgid "Deleted location %s"
-msgstr "Ort %s gelöscht"
+msgid "Removed location %s"
+msgstr ""
 
-#: saleor/dashboard/shipping/views.py:32
+#: saleor/dashboard/product/views.py:664
 #, python-format
 msgctxt "Dashboard message"
-msgid "%(shipping_method_name)s method saved"
-msgstr "%(shipping_method_name)s Art gespeichert"
+msgid "%(count)d product has been updated"
+msgid_plural "%(count)d products have been updated"
+msgstr[0] ""
+msgstr[1] ""
 
-#: saleor/dashboard/shipping/views.py:73
+#: saleor/dashboard/shipping/views.py:39
+msgctxt "dashboard message"
+msgid "Updated shipping method"
+msgstr ""
+
+#: saleor/dashboard/shipping/views.py:41
+msgctxt "Dashboard message"
+msgid "Added shipping method"
+msgstr ""
+
+#: saleor/dashboard/shipping/views.py:71
 #, python-format
 msgctxt "Dashboard message"
-msgid "%(shipping_method_name)s successfully deleted"
-msgstr "%(shipping_method_name)s erfolgreich gelöscht"
+msgid "%(shipping_method_name)s successfully removed"
+msgstr ""
 
-#: saleor/dashboard/sites/views.py:29
+#: saleor/dashboard/shipping/views.py:92
 #, python-format
-msgid "Updated site %s"
-msgstr "Seite %s geändert"
+msgctxt "Dashboard message"
+msgid "Updated country shipping price %s"
+msgstr ""
 
-#~ msgctxt "Product form placeholder"
-#~ msgid "Give your awesome product a name"
-#~ msgstr "Geben Sie Ihren tollen Profukt einen Namen."
+#: saleor/dashboard/shipping/views.py:94
+#, python-format
+msgctxt "Dashboard message"
+msgid "Added shipping price for %s"
+msgstr ""
 
-#~ msgctxt "Dashboard message"
-#~ msgid "Added variant %s"
-#~ msgstr "Variante %s hinzuefügt"
+#: saleor/dashboard/shipping/views.py:115
+#, python-format
+msgctxt "Dashboard message"
+msgid "Removed shipping method %s"
+msgstr ""
 
-#~ msgctxt "Dashboard message"
-#~ msgid "Deleted variants"
-#~ msgstr "Varianten gelöscht"
+#: saleor/dashboard/sites/views.py:36
+msgctxt "Dashboard message"
+msgid "Updated site settings"
+msgstr ""
+
+#: saleor/dashboard/sites/views.py:65
+#, python-format
+msgctxt "dashboard message"
+msgid "Updated authorization key %s"
+msgstr ""
+
+#: saleor/dashboard/sites/views.py:67
+#, python-format
+msgctxt "Dashboard message"
+msgid "Added authorization key %s"
+msgstr ""
+
+#: saleor/dashboard/sites/views.py:86
+#, python-format
+msgctxt "Dashboard message"
+msgid "Removed site authorization key %s"
+msgstr ""
+
+#: saleor/dashboard/staff/views.py:39
+#, python-format
+msgctxt "Dashboard message"
+msgid "Updated staff member %s"
+msgstr "Mitarbeiter %s geändert"
+
+#: saleor/dashboard/staff/views.py:54
+#, python-format
+msgctxt "Dashboard message"
+msgid "Added staff member %s"
+msgstr "Mitarbeiter %s hinzugefügt"
+
+#: saleor/dashboard/staff/views.py:72
+#, python-format
+msgctxt "Dashboard message"
+msgid "Removed staff member %s"
+msgstr ""

@@ -1,24 +1,21 @@
-from __future__ import unicode_literals
-
 import datetime
 import json
 
-from django.core.urlresolvers import reverse
+from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
+from django.urls import reverse
 
-from .filters import (get_now_sorted_by, get_sort_by_choices,
-                      ProductFilter)
-from .models import Category
-from .utils import (products_with_details, products_for_cart,
-                    handle_cart_form, get_availability,
-                    get_product_images, get_variant_picker_data,
-                    get_product_attributes_data,
-                    product_json_ld, products_with_availability)
 from ..cart.utils import set_cart_cookie
 from ..core.utils import get_paginator_items, serialize_decimal
-from ..settings import PAGINATE_BY
+from ..core.utils.filters import get_now_sorted_by, get_sort_by_choices
+from .filters import ProductFilter, SORT_BY_FIELDS
+from .models import Category
+from .utils import (
+    get_availability, get_product_attributes_data, get_product_images,
+    get_variant_picker_data, handle_cart_form, product_json_ld,
+    products_for_cart, products_with_availability, products_with_details)
 
 
 def product_details(request, slug, product_id, form=None):
@@ -62,9 +59,6 @@ def product_details(request, slug, product_id, form=None):
         form = handle_cart_form(request, product, create_cart=False)[0]
     availability = get_availability(product, discounts=request.discounts,
                                     local_currency=request.currency)
-    template_name = 'product/details_%s.html' % (
-        type(product).__name__.lower(),)
-    templates = [template_name, 'product/details.html']
     product_images = get_product_images(product)
     variant_picker_data = get_variant_picker_data(
         product, request.discounts, request.currency)
@@ -72,7 +66,7 @@ def product_details(request, slug, product_id, form=None):
     show_variant_picker = all([v.attributes for v in product.variants.all()])
     json_ld_data = product_json_ld(product, availability, product_attributes)
     return TemplateResponse(
-        request, templates,
+        request, 'product/details.html',
         {'is_visible': is_visible,
          'form': form,
          'availability': availability,
@@ -120,19 +114,21 @@ def category_index(request, path, category_id):
         return redirect('product:category', permanent=True, path=actual_path,
                         category_id=category_id)
     products = (products_with_details(user=request.user)
-                .filter(categories__name=category)
+                .filter(categories__id=category.id)
                 .order_by('name'))
     product_filter = ProductFilter(
         request.GET, queryset=products, category=category)
     products_paginated = get_paginator_items(
-        product_filter.qs, PAGINATE_BY, request.GET.get('page'))
+        product_filter.qs, settings.PAGINATE_BY, request.GET.get('page'))
     products_and_availability = list(products_with_availability(
         products_paginated, request.discounts, request.currency))
     now_sorted_by = get_now_sorted_by(product_filter)
-    ctx = {'category': category, 'filter': product_filter,
+    arg_sort_by = request.GET.get('sort_by')
+    is_descending = arg_sort_by.startswith('-') if arg_sort_by else False
+    ctx = {'category': category, 'filter_set': product_filter,
            'products': products_and_availability,
            'products_paginated': products_paginated,
            'sort_by_choices': get_sort_by_choices(product_filter),
            'now_sorted_by': now_sorted_by,
-           'is_descending': now_sorted_by.startswith('-')}
+           'is_descending': is_descending}
     return TemplateResponse(request, 'category/index.html', ctx)

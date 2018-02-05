@@ -1,12 +1,15 @@
 from collections import defaultdict
 
-import i18naddress
 from django import forms
 from django.forms.forms import BoundField
-from django.utils.translation import pgettext_lazy, pgettext
+from django.utils.translation import pgettext_lazy
 from django_countries.data import COUNTRIES
+import i18naddress
+from phonenumber_field.formfields import PhoneNumberField
 
 from .models import Address
+from .validators import validate_possible_number
+from .widgets import PhonePrefixWidget
 
 COUNTRY_FORMS = {}
 UNKNOWN_COUNTRIES = set()
@@ -18,6 +21,7 @@ AREA_TYPE_TRANSLATIONS = {
     'department': pgettext_lazy('Address field', 'Department'),
     'district': pgettext_lazy('Address field', 'District'),
     'do_si': pgettext_lazy('Address field', 'Do/si'),
+    'eircode': pgettext_lazy('Address field', 'Eircode'),
     'emirate': pgettext_lazy('Address field', 'Emirate'),
     'island': pgettext_lazy('Address field', 'Island'),
     'neighborhood': pgettext_lazy('Address field', 'Neighborhood'),
@@ -34,17 +38,30 @@ AREA_TYPE_TRANSLATIONS = {
     'zip': pgettext_lazy('Address field', 'ZIP code')}
 
 
+class PossiblePhoneNumberFormField(PhoneNumberField):
+    """
+    Modify PhoneNumberField form field to allow using phone numbers from
+    countries other than selected one.
+    To achieve this both default_validator attribute and to_python method needs
+    to be overwritten.
+    """
+
+    default_validators = [validate_possible_number]
+
+    def to_python(self, value):
+        return value
+
+
 class AddressMetaForm(forms.ModelForm):
-    preview = forms.BooleanField(
-        label=pgettext('Address meta form label', 'preview'),
-        initial=False, required=False)
+    # This field is never visible in UI
+    preview = forms.BooleanField(initial=False, required=False)
 
     class Meta:
         model = Address
         fields = ['country', 'preview']
 
     def clean(self):
-        data = super(AddressMetaForm, self).clean()
+        data = super().clean()
         if data.get('preview'):
             self.data = self.data.copy()
             self.data['preview'] = False
@@ -72,9 +89,12 @@ class AddressForm(forms.ModelForm):
         model = Address
         exclude = []
 
+    phone = PossiblePhoneNumberFormField(
+        widget=PhonePrefixWidget, required=False)
+
     def __init__(self, *args, **kwargs):
         autocomplete_type = kwargs.pop('autocomplete_type', None)
-        super(AddressForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         autocomplete_dict = defaultdict(
             lambda: 'off', self.AUTOCOMPLETE_MAPPING)
         for field_name, field in self.fields.items():
@@ -129,7 +149,7 @@ class CountryAwareAddressForm(AddressForm):
         return data
 
     def clean(self):
-        data = super(CountryAwareAddressForm, self).clean()
+        data = super().clean()
         return self.validate_address(data)
 
 

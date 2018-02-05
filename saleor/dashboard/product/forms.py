@@ -1,8 +1,6 @@
-from __future__ import unicode_literals
-
 from django import forms
 from django.db.models import Count
-from django.forms.models import ModelChoiceIterator, inlineformset_factory
+from django.forms.models import ModelChoiceIterator
 from django.forms.widgets import CheckboxSelectMultiple
 from django.utils.encoding import smart_text
 from django.utils.text import slugify
@@ -11,19 +9,18 @@ from django.utils.translation import pgettext_lazy
 from ...product.models import (
     AttributeChoiceValue, Product, ProductAttribute, ProductClass,
     ProductImage, ProductVariant, Stock, StockLocation, VariantImage)
-from ...search import index as search_index
 from .widgets import ImagePreviewWidget
+from . import ProductBulkAction
 
 
 class ProductClassSelectorForm(forms.Form):
-
-    def __init__(self, *args, **kwargs):
-        product_classes = kwargs.pop('product_classes', [])
-        super(ProductClassSelectorForm, self).__init__(*args, **kwargs)
-        choices = [(obj.pk, obj.name) for obj in product_classes]
-        self.fields['product_cls'] = forms.ChoiceField(
-            label=pgettext_lazy('Product class form label', 'Product type'),
-            choices=choices, widget=forms.RadioSelect)
+    """
+    Form that allows selecting product class.
+    """
+    product_cls = forms.ModelChoiceField(
+        queryset=ProductClass.objects.all(),
+        label=pgettext_lazy('Product class form label', 'Product type'),
+        widget=forms.RadioSelect, empty_label=None)
 
 
 class StockForm(forms.ModelForm):
@@ -33,7 +30,7 @@ class StockForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.variant = kwargs.pop('variant')
-        super(StockForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def clean_location(self):
         location = self.cleaned_data['location']
@@ -49,7 +46,7 @@ class StockForm(forms.ModelForm):
 
     def save(self, commit=True):
         self.instance.variant = self.variant
-        return super(StockForm, self).save(commit)
+        return super().save(commit)
 
 
 class ProductClassForm(forms.ModelForm):
@@ -65,7 +62,7 @@ class ProductClassForm(forms.ModelForm):
                 'Attributes common to all variants')}
 
     def clean(self):
-        data = super(ProductClassForm, self).clean()
+        data = super().clean()
         has_variants = self.cleaned_data['has_variants']
         product_attr = set(self.cleaned_data['product_attributes'])
         variant_attr = set(self.cleaned_data['variant_attributes'])
@@ -109,7 +106,7 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.product_attributes = []
-        super(ProductForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['categories'].widget.attrs['data-placeholder'] = (
             pgettext_lazy('Product form placeholder', 'Search'))
         product_class = self.instance.product_class
@@ -144,8 +141,7 @@ class ProductForm(forms.ModelForm):
             else:
                 attributes[smart_text(attr.pk)] = value
         self.instance.attributes = attributes
-        instance = super(ProductForm, self).save(commit=commit)
-        search_index.insert_or_update_object(instance)
+        instance = super().save(commit=commit)
         return instance
 
 
@@ -155,7 +151,7 @@ class ProductVariantForm(forms.ModelForm):
         exclude = ['attributes', 'product', 'images']
 
     def __init__(self, *args, **kwargs):
-        super(ProductVariantForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if self.instance.product.pk:
             self.fields['price_override'].widget.attrs[
                 'placeholder'] = self.instance.product.price.gross
@@ -183,7 +179,7 @@ class VariantAttributeForm(forms.ModelForm):
         fields = []
 
     def __init__(self, *args, **kwargs):
-        super(VariantAttributeForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         attrs = self.instance.product.product_class.variant_attributes.all()
         self.available_attrs = attrs.prefetch_related('values')
         for attr in self.available_attrs:
@@ -207,7 +203,7 @@ class VariantAttributeForm(forms.ModelForm):
             else:
                 attributes[smart_text(attr.pk)] = value
         self.instance.attributes = attributes
-        return super(VariantAttributeForm, self).save(commit=commit)
+        return super().save(commit=commit)
 
 
 class VariantBulkDeleteForm(forms.Form):
@@ -238,7 +234,7 @@ class ProductImageForm(forms.ModelForm):
         exclude = ('product', 'order')
 
     def __init__(self, *args, **kwargs):
-        super(ProductImageForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if self.instance.image:
             self.fields['image'].widget = ImagePreviewWidget()
 
@@ -251,7 +247,7 @@ class VariantImagesSelectForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.variant = kwargs.pop('variant')
-        super(VariantImagesSelectForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['images'].queryset = self.variant.product.images.all()
         self.fields['images'].initial = self.variant.images.all()
 
@@ -278,21 +274,17 @@ class StockLocationForm(forms.ModelForm):
 class AttributeChoiceValueForm(forms.ModelForm):
     class Meta:
         model = AttributeChoiceValue
-        exclude = ('slug', )
+        fields = ['attribute', 'name', 'color']
+        widgets = {'attribute': forms.widgets.HiddenInput()}
 
     def save(self, commit=True):
         self.instance.slug = slugify(self.instance.name)
-        return super(AttributeChoiceValueForm, self).save(commit=commit)
-
-
-AttributeChoiceValueFormset = inlineformset_factory(
-    ProductAttribute, AttributeChoiceValue, form=AttributeChoiceValueForm,
-    extra=1)
+        return super().save(commit=commit)
 
 
 class OrderedModelMultipleChoiceField(forms.ModelMultipleChoiceField):
     def clean(self, value):
-        qs = super(OrderedModelMultipleChoiceField, self).clean(value)
+        qs = super().clean(value)
         keys = list(map(int, value))
         return sorted(qs, key=lambda v: keys.index(v.pk))
 
@@ -306,7 +298,7 @@ class ReorderProductImagesForm(forms.ModelForm):
         fields = ()
 
     def __init__(self, *args, **kwargs):
-        super(ReorderProductImagesForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if self.instance:
             self.fields['ordered_images'].queryset = self.instance.images.all()
 
@@ -324,5 +316,24 @@ class UploadImageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         product = kwargs.pop('product')
-        super(UploadImageForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.instance.product = product
+
+
+class ProductBulkUpdate(forms.Form):
+    """Performs one selected bulk action on all selected products."""
+    action = forms.ChoiceField(choices=ProductBulkAction.CHOICES)
+    products = forms.ModelMultipleChoiceField(queryset=Product.objects.all())
+
+    def save(self):
+        action = self.cleaned_data['action']
+        if action == ProductBulkAction.PUBLISH:
+            self._publish_products()
+        elif action == ProductBulkAction.UNPUBLISH:
+            self._unpublish_products()
+
+    def _publish_products(self):
+        self.cleaned_data['products'].update(is_published=True)
+
+    def _unpublish_products(self):
+        self.cleaned_data['products'].update(is_published=False)

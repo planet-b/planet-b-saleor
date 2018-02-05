@@ -1,45 +1,54 @@
-from __future__ import unicode_literals
-
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
+from django.db.models import Q
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, reverse
 from django.template.response import TemplateResponse
-from django.utils.http import is_safe_url
-from django.utils.translation import pgettext_lazy
+from django.utils.translation import npgettext_lazy, pgettext_lazy
 from django.views.decorators.http import require_POST
+from django_prices.templatetags.prices_i18n import gross
 
 from ...core.utils import get_paginator_items
 from ...product.models import (
-    Product, ProductAttribute, ProductClass, ProductImage, ProductVariant,
-    Stock, StockLocation)
-from ...product.utils import get_availability
-from ..views import staff_member_required, superuser_required
-from ...settings import DASHBOARD_PAGINATE_BY
+    AttributeChoiceValue, Product, ProductAttribute, ProductClass,
+    ProductImage, ProductVariant, Stock, StockLocation)
+from ...product.utils import (
+    get_availability, get_product_costs_data, get_variant_costs_data)
+from ..views import staff_member_required
+from .filters import (
+    ProductFilter, ProductAttributeFilter, ProductClassFilter,
+    StockLocationFilter)
 from . import forms
 
 
-@superuser_required
+@staff_member_required
+@permission_required('product.view_properties')
 def product_class_list(request):
     classes = ProductClass.objects.all().prefetch_related(
         'product_attributes', 'variant_attributes').order_by('name')
+    class_filter = ProductClassFilter(request.GET, queryset=classes)
     form = forms.ProductClassForm(request.POST or None)
     if form.is_valid():
         return redirect('dashboard:product-class-add')
     classes = get_paginator_items(
-        classes, DASHBOARD_PAGINATE_BY, request.GET.get('page'))
+        class_filter.qs, settings.DASHBOARD_PAGINATE_BY,
+        request.GET.get('page'))
     classes.object_list = [
         (pc.pk, pc.name, pc.has_variants, pc.product_attributes.all(),
          pc.variant_attributes.all())
         for pc in classes.object_list]
-    ctx = {'form': form, 'product_classes': classes}
+    ctx = {
+        'form': form, 'product_classes': classes, 'filter_set': class_filter,
+        'is_empty': not class_filter.queryset.exists()}
     return TemplateResponse(
         request,
         'dashboard/product/product_class/list.html',
         ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('product.edit_properties')
 def product_class_create(request):
     product_class = ProductClass()
     form = forms.ProductClassForm(request.POST or None,
@@ -57,7 +66,8 @@ def product_class_create(request):
         ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('product.edit_properties')
 def product_class_edit(request, pk):
     product_class = get_object_or_404(
         ProductClass, pk=pk)
@@ -76,7 +86,8 @@ def product_class_edit(request, pk):
         ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('product.edit_properties')
 def product_class_delete(request, pk):
     product_class = get_object_or_404(ProductClass, pk=pk)
     if request.method == 'POST':
@@ -85,10 +96,11 @@ def product_class_delete(request, pk):
             request,
             pgettext_lazy(
                 'Dashboard message',
-                'Deleted product type %s') % product_class)
+                'Removed product type %s') % product_class)
         return redirect('dashboard:product-class-list')
-    ctx = {'product_class': product_class,
-           'products': product_class.products.all()}
+    ctx = {
+        'product_class': product_class,
+        'products': product_class.products.all()}
     return TemplateResponse(
         request,
         'dashboard/product/product_class/modal/confirm_delete.html',
@@ -101,16 +113,36 @@ def product_list(request):
     products = Product.objects.prefetch_related('images')
     products = products.order_by('name')
     product_classes = ProductClass.objects.all()
-    form = forms.ProductClassSelectorForm(
-        request.POST or None, product_classes=product_classes)
-    if form.is_valid():
-        return redirect(
-            'dashboard:product-add', class_pk=form.cleaned_data['product_cls'])
+    product_filter = ProductFilter(request.GET, queryset=products)
     products = get_paginator_items(
-        products, DASHBOARD_PAGINATE_BY, request.GET.get('page'))
+        product_filter.qs, settings.DASHBOARD_PAGINATE_BY,
+        request.GET.get('page'))
     ctx = {
-        'form': form, 'products': products, 'product_classes': product_classes}
+        'bulk_action_form': forms.ProductBulkUpdate(),
+        'products': products, 'product_classes': product_classes,
+        'filter_set': product_filter,
+        'is_empty': not product_filter.queryset.exists()}
     return TemplateResponse(request, 'dashboard/product/list.html', ctx)
+
+
+@staff_member_required
+@permission_required('product.edit_product')
+def product_select_classes(request):
+    """View for add product modal embedded in the product list view."""
+    form = forms.ProductClassSelectorForm(request.POST or None)
+    status = 200
+    if form.is_valid():
+        redirect_url = reverse(
+            'dashboard:product-add',
+            kwargs={'class_pk': form.cleaned_data.get('product_cls').pk})
+        return (
+            JsonResponse({'redirectUrl': redirect_url})
+            if request.is_ajax() else redirect(redirect_url))
+    elif form.errors:
+        status = 400
+    ctx = {'form': form}
+    template = 'dashboard/product/modal/select_class.html'
+    return TemplateResponse(request, template, ctx, status=status)
 
 
 @staff_member_required
@@ -156,6 +188,7 @@ def product_detail(request, pk):
     images = product.images.all()
     availability = get_availability(product)
     sale_price = availability.price_range
+    purchase_cost, gross_margin = get_product_costs_data(product)
     gross_price_range = product.get_gross_price_range()
 
     # no_variants is True for product classes that doesn't require variant.
@@ -171,10 +204,13 @@ def product_detail(request, pk):
         'product': product, 'sale_price': sale_price, 'variants': variants,
         'gross_price_range': gross_price_range, 'images': images,
         'no_variants': no_variants, 'only_variant': only_variant,
-        'stock': stock}
+        'stock': stock, 'purchase_cost': purchase_cost,
+        'gross_margin': gross_margin,
+        'is_empty': not variants.exists()}
     return TemplateResponse(request, 'dashboard/product/detail.html', ctx)
 
 
+@require_POST
 @staff_member_required
 @permission_required('product.edit_product')
 def product_toggle_is_published(request, pk):
@@ -224,7 +260,7 @@ def product_delete(request, pk):
         product.delete()
         messages.success(
             request,
-            pgettext_lazy('Dashboard message', 'Deleted product %s') % product)
+            pgettext_lazy('Dashboard message', 'Removed product %s') % product)
         return redirect('dashboard:product-list')
     return TemplateResponse(
         request,
@@ -280,7 +316,7 @@ def stock_delete(request, product_pk, variant_pk, stock_pk):
     if request.method == 'POST':
         stock.delete()
         messages.success(
-            request, pgettext_lazy('Dashboard message', 'Deleted stock'))
+            request, pgettext_lazy('Dashboard message', 'Removed stock'))
         return redirect(
             'dashboard:variant-details', product_pk=product.pk,
             variant_pk=variant.pk)
@@ -297,10 +333,10 @@ def product_images(request, product_pk):
     product = get_object_or_404(
         Product.objects.prefetch_related('images'), pk=product_pk)
     images = product.images.all()
+    ctx = {
+        'product': product, 'images': images, 'is_empty': not images.exists()}
     return TemplateResponse(
-        request,
-        'dashboard/product/product_image/list.html',
-        {'product': product, 'images': images})
+        request, 'dashboard/product/product_image/list.html', ctx)
 
 
 @staff_member_required
@@ -343,7 +379,7 @@ def product_image_delete(request, product_pk, img_pk):
             request,
             pgettext_lazy(
                 'Dashboard message',
-                'Deleted image %s') % image.image.name)
+                'Removed image %s') % image.image.name)
         return redirect('dashboard:product-image-list', product_pk=product.pk)
     return TemplateResponse(
         request,
@@ -397,8 +433,11 @@ def variant_details(request, product_pk, variant_pk):
 
     stock = variant.stock.all()
     images = variant.images.all()
+    costs_data = get_variant_costs_data(variant)
     ctx = {'images': images, 'product': product, 'stock': stock,
-           'variant': variant}
+           'variant': variant, 'costs': costs_data['costs'],
+           'margins': costs_data['margins'],
+           'is_empty': not stock.exists()}
     return TemplateResponse(
         request,
         'dashboard/product/product_variant/detail.html',
@@ -434,7 +473,7 @@ def variant_delete(request, product_pk, variant_pk):
         messages.success(
             request,
             pgettext_lazy(
-                'Dashboard message', 'Deleted variant %s') % variant.name)
+                'Dashboard message', 'Removed variant %s') % variant.name)
         return redirect('dashboard:product-detail', pk=product.pk)
 
     ctx = {'is_only_variant': product.variants.count() == 1,
@@ -446,55 +485,60 @@ def variant_delete(request, product_pk, variant_pk):
         ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('product.view_properties')
 def attribute_list(request):
+    attributes = (ProductAttribute.objects.prefetch_related('values')
+                  .order_by('name'))
+    attribute_filter = ProductAttributeFilter(request.GET, queryset=attributes)
     attributes = [
         (attribute.pk, attribute.name, attribute.values.all())
-        for attribute in ProductAttribute.objects.prefetch_related('values')]
+        for attribute in attribute_filter.qs]
     attributes = get_paginator_items(
-        attributes, DASHBOARD_PAGINATE_BY, request.GET.get('page'))
-    ctx = {'attributes': attributes}
+        attributes, settings.DASHBOARD_PAGINATE_BY, request.GET.get('page'))
+    ctx = {
+        'attributes': attributes, 'filter_set': attribute_filter,
+        'is_empty': not attribute_filter.queryset.exists()}
     return TemplateResponse(
-        request,
-        'dashboard/product/product_attribute/list.html',
-        ctx)
+        request, 'dashboard/product/product_attribute/list.html', ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('product.view_properties')
 def attribute_detail(request, pk):
     attributes = ProductAttribute.objects.prefetch_related('values').all()
     attribute = get_object_or_404(attributes, pk=pk)
+    ctx = {
+        'attribute': attribute,
+        'is_empty': not attributes.exists()}
     return TemplateResponse(
-        request,
-        'dashboard/product/product_attribute/detail.html',
-        {'attribute': attribute})
+        request, 'dashboard/product/product_attribute/detail.html', ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('product.edit_properties')
 def attribute_edit(request, pk=None):
     if pk:
         attribute = get_object_or_404(ProductAttribute, pk=pk)
     else:
         attribute = ProductAttribute()
     form = forms.ProductAttributeForm(request.POST or None, instance=attribute)
-    formset = forms.AttributeChoiceValueFormset(
-        request.POST or None, request.FILES or None, instance=attribute)
-    if all([form.is_valid(), formset.is_valid()]):
+    if form.is_valid():
         attribute = form.save()
-        formset.save()
         msg = pgettext_lazy(
             'Dashboard message', 'Updated attribute') if pk else pgettext_lazy(
                 'Dashboard message', 'Added attribute')
         messages.success(request, msg)
         return redirect('dashboard:product-attribute-detail', pk=attribute.pk)
-    ctx = {'attribute': attribute, 'form': form, 'formset': formset}
+    ctx = {'attribute': attribute, 'form': form}
     return TemplateResponse(
         request,
         'dashboard/product/product_attribute/form.html',
         ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('product.edit_properties')
 def attribute_delete(request, pk):
     attribute = get_object_or_404(ProductAttribute, pk=pk)
     if request.method == 'POST':
@@ -503,21 +547,70 @@ def attribute_delete(request, pk):
             request,
             pgettext_lazy(
                 'Dashboard message',
-                'Deleted attribute %s') % (attribute.name,))
+                'Removed attribute %s') % (attribute.name,))
         return redirect('dashboard:product-attributes')
     return TemplateResponse(
         request,
-        'dashboard/product/product_attribute/modal/confirm_delete.html',
+        'dashboard/product/product_attribute/modal/'
+        'attribute_confirm_delete.html',
         {'attribute': attribute})
+
+
+@staff_member_required
+@permission_required('product.edit_properties')
+def attribute_choice_value_edit(request, attribute_pk, value_pk=None):
+    attribute = get_object_or_404(ProductAttribute, pk=attribute_pk)
+    if value_pk:
+        value = get_object_or_404(AttributeChoiceValue, pk=value_pk)
+    else:
+        value = AttributeChoiceValue(attribute_id=attribute_pk)
+    form = forms.AttributeChoiceValueForm(
+        request.POST or None, instance=value)
+    if form.is_valid():
+        form.save()
+        msg = pgettext_lazy(
+            'Dashboard message', 'Updated attribute\'s value')\
+            if value_pk else pgettext_lazy(
+                'Dashboard message', 'Added attribute\'s value')
+        messages.success(request, msg)
+        return redirect('dashboard:product-attribute-detail', pk=attribute_pk)
+    ctx = {'attribute': attribute, 'value': value, 'form': form}
+    return TemplateResponse(
+        request,
+        'dashboard/product/product_attribute/values/form.html',
+        ctx)
+
+
+@staff_member_required
+@permission_required('product.edit_properties')
+def attribute_choice_value_delete(request, attribute_pk, value_pk):
+    value = get_object_or_404(AttributeChoiceValue, pk=value_pk)
+    if request.method == 'POST':
+        value.delete()
+        messages.success(
+            request,
+            pgettext_lazy(
+                'Dashboard message',
+                'Removed attribute\'s value %s') % (value.name,))
+        return redirect('dashboard:product-attribute-detail', pk=attribute_pk)
+    return TemplateResponse(
+        request,
+        'dashboard/product/product_attribute/values/modal/confirm_delete.html',
+        {'value': value, 'attribute_pk': attribute_pk})
 
 
 @staff_member_required
 @permission_required('product.view_stock_location')
 def stock_location_list(request):
     stock_locations = StockLocation.objects.all().order_by('name')
+    stock_location_filter = StockLocationFilter(
+        request.GET, queryset=stock_locations)
     stock_locations = get_paginator_items(
-        stock_locations, DASHBOARD_PAGINATE_BY, request.GET.get('page'))
-    ctx = {'locations': stock_locations}
+        stock_location_filter.qs, settings.DASHBOARD_PAGINATE_BY,
+        request.GET.get('page'))
+    ctx = {
+        'locations': stock_locations, 'filter_set': stock_location_filter,
+        'is_empty': not stock_location_filter.queryset.exists()}
     return TemplateResponse(
         request,
         'dashboard/product/stock_location/list.html',
@@ -556,7 +649,7 @@ def stock_location_delete(request, location_pk):
         messages.success(
             request, pgettext_lazy(
                 'Dashboard message for stock location',
-                'Deleted location %s') % location)
+                'Removed location %s') % location)
         return redirect('dashboard:product-stock-location-list')
     ctx = {'location': location, 'stock_count': stock_count}
     return TemplateResponse(
@@ -594,3 +687,65 @@ def ajax_upload_image(request, product_pk):
         status = 400
         ctx = {'error': form.errors}
     return JsonResponse(ctx, status=status)
+
+
+@require_POST
+@staff_member_required
+def product_bulk_update(request):
+    form = forms.ProductBulkUpdate(request.POST)
+    if form.is_valid():
+        form.save()
+        count = len(form.cleaned_data['products'])
+        msg = npgettext_lazy(
+            'Dashboard message',
+            '%(count)d product has been updated',
+            '%(count)d products have been updated',
+            number=count) % {'count': count}
+        messages.success(request, msg)
+    return redirect('dashboard:product-list')
+
+
+@staff_member_required
+def ajax_available_variants_list(request):
+    """
+    Returns variants list filtered by request GET parameters.
+    Response format is as required by select2 field.
+    """
+    def get_variant_label(variant, discounts):
+        return '%s, %s, %s' % (
+            variant.sku, variant.display_product(),
+            gross(variant.get_price_per_item(discounts)))
+
+    available_products = Product.objects.get_available_products()
+    queryset = ProductVariant.objects.filter(
+        product__in=available_products).prefetch_related('product')
+    search_query = request.GET.get('q', '')
+    if search_query:
+        queryset = queryset.filter(
+            Q(sku__icontains=search_query) |
+            Q(name__icontains=search_query) |
+            Q(product__name__icontains=search_query))
+    discounts = request.discounts
+    variants = [
+        {'id': variant.id, 'text': get_variant_label(variant, discounts)}
+        for variant in queryset
+    ]
+    return JsonResponse({'results': variants})
+
+
+@staff_member_required
+def ajax_products_list(request):
+    """
+    Returns products list filtered by request GET parameters.
+    Response format is as required by select2 field.
+    """
+    queryset = (
+        Product.objects.all() if request.user.has_perm('product.view_product')
+        else Product.objects.get_available_products())
+    search_query = request.GET.get('q', '')
+    if search_query:
+        queryset = queryset.filter(Q(name__icontains=search_query))
+    products = [
+        {'id': product.id, 'text': str(product)} for product in queryset
+    ]
+    return JsonResponse({'results': products})
