@@ -7,6 +7,7 @@
 @import "components/global";
 @import "components/breadcrumbs";
 @import "components/buttons";
+@import "components/card-collapse";
 @import "components/data-table";
 @import "components/dropzone";
 @import "components/form";
@@ -21,6 +22,8 @@
 @import "components/search";
 @import "components/tabs";
 @import "components/timeline";
+@import "components/zero_page";
 
+@import "layouts/search-results";
 @import "layouts/style-guide";
 @import "print";

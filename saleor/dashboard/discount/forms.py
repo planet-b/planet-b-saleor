@@ -2,21 +2,33 @@ import uuid
 
 from django import forms
 from django.conf import settings
+from django.urls import reverse_lazy
 from django.utils.translation import pgettext_lazy
 from django_prices.forms import PriceField
 
+from ...core.forms import (
+    AjaxSelect2ChoiceField, AjaxSelect2MultipleChoiceField)
 from ...discount.models import Sale, Voucher
+from ...product.models import Product
 from ...shipping.models import ShippingMethodCountry, COUNTRY_CODE_CHOICES
 
 
 class SaleForm(forms.ModelForm):
+    products = AjaxSelect2MultipleChoiceField(
+        queryset=Product.objects.all(),
+        fetch_data_url=reverse_lazy('dashboard:ajax-products'), required=True)
 
     class Meta:
         model = Sale
         exclude = []
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['products'].set_initial(self.instance.products.all())
+
     def clean(self):
-        cleaned_data = super(SaleForm, self).clean()
+        cleaned_data = super().clean()
         discount_type = cleaned_data['type']
         value = cleaned_data['value']
         if discount_type == Sale.PERCENTAGE and value > 100:
@@ -38,7 +50,7 @@ class VoucherForm(forms.ModelForm):
         if instance and instance.id is None and not initial.get('code'):
             initial['code'] = self._generate_code
         kwargs['initial'] = initial
-        super(VoucherForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _generate_code(self):
         while True:
@@ -78,7 +90,7 @@ class ShippingVoucherForm(forms.ModelForm):
     def save(self, commit=True):
         self.instance.category = None
         self.instance.product = None
-        return super(ShippingVoucherForm, self).save(commit)
+        return super().save(commit)
 
 
 class ValueVoucherForm(forms.ModelForm):
@@ -97,22 +109,17 @@ class ValueVoucherForm(forms.ModelForm):
         self.instance.category = None
         self.instance.apply_to = None
         self.instance.product = None
-        return super(ValueVoucherForm, self).save(commit)
+        return super().save(commit)
 
 
-class ProductVoucherForm(forms.ModelForm):
+class CommonVoucherForm(forms.ModelForm):
 
     use_required_attribute = False
     apply_to = forms.ChoiceField(
         choices=Voucher.APPLY_TO_PRODUCT_CHOICES, required=False)
 
-    class Meta:
-        model = Voucher
-        fields = ['product', 'apply_to']
-
     def __init__(self, *args, **kwargs):
-        super(ProductVoucherForm, self).__init__(*args, **kwargs)
-        self.fields['product'].required = True
+        super().__init__(*args, **kwargs)
 
     def save(self, commit=True):
         self.instance.category = None
@@ -124,31 +131,31 @@ class ProductVoucherForm(forms.ModelForm):
         if (self.instance.discount_value_type ==
                 Voucher.DISCOUNT_VALUE_PERCENTAGE):
             self.instance.apply_to = None
-        return super(ProductVoucherForm, self).save(commit)
+        return super().save(commit)
 
 
-class CategoryVoucherForm(forms.ModelForm):
+class ProductVoucherForm(CommonVoucherForm):
+    product = AjaxSelect2ChoiceField(
+        queryset=Product.objects.all(),
+        fetch_data_url=reverse_lazy('dashboard:ajax-products'),
+        required=True)
 
-    use_required_attribute = False
-    apply_to = forms.ChoiceField(
-        choices=Voucher.APPLY_TO_PRODUCT_CHOICES, required=False)
+    class Meta:
+        model = Voucher
+        fields = ['product', 'apply_to']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.product:
+            self.fields['product'].set_initial(self.instance.product)
+
+
+class CategoryVoucherForm(CommonVoucherForm):
 
     class Meta:
         model = Voucher
         fields = ['category', 'apply_to']
 
     def __init__(self, *args, **kwargs):
-        super(CategoryVoucherForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['category'].required = True
-
-    def save(self, commit=True):
-        self.instance.limit = None
-        self.instance.product = None
-        # Apply to one with percentage discount is more complicated case.
-        # On which product we should apply it? On first, last or cheapest?
-        # Percentage case is limited to the all value and the apply_to field
-        # is not used in this case so we set it to None.
-        if (self.instance.discount_value_type ==
-                Voucher.DISCOUNT_VALUE_PERCENTAGE):
-            self.instance.apply_to = None
-        return super(CategoryVoucherForm, self).save(commit)

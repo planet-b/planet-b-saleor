@@ -1,19 +1,25 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
+from django.urls import reverse
 from django.utils.translation import pgettext
-from .forms import (ChangePasswordForm, get_address_form,
-                    logout_on_password_change)
+
+from ..core.utils import get_paginator_items
+from .forms import (
+    ChangePasswordForm, get_address_form, logout_on_password_change)
 
 
 @login_required
 def details(request):
     password_form = get_or_process_password_form(request)
+    orders = request.user.orders.prefetch_related('groups__lines')
+    orders_paginated = get_paginator_items(
+        orders, settings.PAGINATE_BY, request.GET.get('page'))
     ctx = {'addresses': request.user.addresses.all(),
-           'orders': request.user.orders.prefetch_related('groups__items'),
+           'orders': orders_paginated,
            'change_password_form': password_form}
 
     return TemplateResponse(request, 'userprofile/details.html', ctx)
@@ -52,7 +58,7 @@ def address_delete(request, pk):
         address.delete()
         messages.success(
             request,
-            pgettext('Storefront message', 'Address successfully deleted.'))
+            pgettext('Storefront message', 'Address successfully removed'))
         return HttpResponseRedirect(reverse('profile:details') + '#addresses')
     return TemplateResponse(
         request, 'userprofile/address-delete.html', {'address': address})

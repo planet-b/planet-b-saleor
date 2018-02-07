@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import ast
 import os.path
 
@@ -69,6 +67,9 @@ EMAIL_BACKEND = email_config['EMAIL_BACKEND']
 EMAIL_USE_TLS = email_config['EMAIL_USE_TLS']
 EMAIL_USE_SSL = email_config['EMAIL_USE_SSL']
 
+ENABLE_SSL = ast.literal_eval(
+    os.environ.get('ENABLE_SSL', 'False'))
+
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 ORDER_FROM_EMAIL = os.getenv('ORDER_FROM_EMAIL', DEFAULT_FROM_EMAIL)
 
@@ -108,9 +109,7 @@ context_processors = [
 
 loaders = [
     'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-    # TODO: this one is slow, but for now need for mptt?
-    'django.template.loaders.eggs.Loader']
+    'django.template.loaders.app_directories.Loader']
 
 if not DEBUG:
     loaders = [('django.template.loaders.cached.Loader', loaders)]
@@ -127,20 +126,22 @@ TEMPLATES = [{
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    'babeldjango.middleware.LocaleMiddleware',
+    'django_babel.middleware.LocaleMiddleware',
     'saleor.core.middleware.DiscountMiddleware',
     'saleor.core.middleware.GoogleAnalytics',
     'saleor.core.middleware.CountryMiddleware',
     'saleor.core.middleware.CurrencyMiddleware',
     'saleor.core.middleware.ClearSiteCacheMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
+    'impersonate.middleware.ImpersonateMiddleware'
 ]
 
 INSTALLED_APPS = [
@@ -157,6 +158,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.postgres',
     'django.forms',
+    'corsheaders',
 
     # Local apps
     'saleor.userprofile',
@@ -175,7 +177,7 @@ INSTALLED_APPS = [
 
     # External apps
     'versatileimagefield',
-    'babeldjango',
+    'django_babel',
     'bootstrap3',
     'django_prices',
     'django_prices_openexchangerates',
@@ -187,26 +189,30 @@ INSTALLED_APPS = [
     'django_countries',
     'django_filters',
     'django_celery_results',
+    'impersonate',
+    'phonenumber_field',
 ]
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console']
+    },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s '
-                      '%(process)d %(thread)d %(message)s'
+            'format': (
+                '%(levelname)s %(name)s %(message)s'
+                ' [PID:%(process)d:%(threadName)s]')
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
-        },
+        }
     },
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse'
-        },
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue'
         }
     },
     'handlers': {
@@ -218,14 +224,18 @@ LOGGING = {
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'filters': ['require_debug_true'],
-            'formatter': 'simple'
-        },
+            'formatter': 'verbose'
+        }
     },
     'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
+        'django': {
+            'handlers': ['console', 'mail_admins'],
+            'level': 'INFO',
+            'propagate': True
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True
         },
         'saleor': {
@@ -252,6 +262,8 @@ LOGIN_REDIRECT_URL = 'home'
 
 GOOGLE_ANALYTICS_TRACKING_ID = os.environ.get('GOOGLE_ANALYTICS_TRACKING_ID')
 
+CORS_ORIGIN_ALLOW_ALL = True
+
 
 def get_host():
     from django.contrib.sites.models import Site
@@ -275,10 +287,11 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger'}
 
 LOW_STOCK_THRESHOLD = 10
-MAX_CART_LINE_QUANTITY = os.environ.get('MAX_CART_LINE_QUANTITY', 50)
+MAX_CART_LINE_QUANTITY = int(os.environ.get('MAX_CART_LINE_QUANTITY', 50))
 
 PAGINATE_BY = 16
 DASHBOARD_PAGINATE_BY = 30
+DASHBOARD_SEARCH_LIMIT = 5
 
 BOOTSTRAP3 = {
     'set_placeholder': False,
@@ -354,30 +367,25 @@ WEBPACK_LOADER = {
 
 LOGOUT_ON_PASSWORD_CHANGE = False
 
+# SEARCH CONFIGURATION
+DB_SEARCH_ENABLED = True
 
-ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL')
-SEARCHBOX_URL = os.environ.get('SEARCHBOX_URL')
-BONSAI_URL = os.environ.get('BONSAI_URL')
-# We'll support couple of elasticsearch add-ons, but finally we'll use single
-# variable
-ES_URL = ELASTICSEARCH_URL or SEARCHBOX_URL or BONSAI_URL or ''
+# support deployment-dependant elastic enviroment variable
+ES_URL = (os.environ.get('ELASTICSEARCH_URL') or
+          os.environ.get('SEARCHBOX_URL') or os.environ.get('BONSAI_URL'))
+
+ENABLE_SEARCH = bool(ES_URL) or DB_SEARCH_ENABLED  # global search disabling
+
+SEARCH_BACKEND = 'saleor.search.backends.postgresql'
+
 if ES_URL:
-    SEARCH_BACKENDS = {
+    SEARCH_BACKEND = 'saleor.search.backends.elasticsearch'
+    INSTALLED_APPS.append('django_elasticsearch_dsl')
+    ELASTICSEARCH_DSL = {
         'default': {
-            'BACKEND': 'saleor.search.backends.elasticsearch5',
-            'URLS': [ES_URL],
-            'INDEX': os.environ.get('ELASTICSEARCH_INDEX_NAME', 'storefront'),
-            'TIMEOUT': 5,
-            'AUTO_UPDATE': True},
-        'dashboard': {
-            'BACKEND': 'saleor.search.backends.dashboard',
-            'URLS': [ES_URL],
-            'INDEX': os.environ.get('ELASTICSEARCH_INDEX_NAME', 'storefront'),
-            'TIMEOUT': 5,
-            'AUTO_UPDATE': False}
+            'hosts': ES_URL
+        },
     }
-else:
-    SEARCH_BACKENDS = {}
 
 
 GRAPHENE = {
@@ -422,7 +430,10 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_RESULT_BACKEND = 'django-db'
 
-
-# Override production variables if DJANGO_DEVELOPMENT env variable is set
-if os.environ.get('DJANGO_DEVELOPMENT') is not None:
-    from .settings_dev import *
+# Impersonate module settings
+IMPERSONATE = {
+    'URI_EXCLUSIONS': [r'^dashboard/'],
+    'CUSTOM_USER_QUERYSET': 'saleor.userprofile.impersonate.get_impersonatable_users',  # noqa
+    'USE_HTTP_REFERER': True,
+    'CUSTOM_ALLOW': 'saleor.userprofile.impersonate.can_impersonate'
+}

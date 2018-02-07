@@ -1,13 +1,15 @@
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
-from django.utils.translation import pgettext
+from django.utils.translation import pgettext, pgettext_lazy
+from satchless.item import InsufficientStock
 
 from ..forms import (
     AnonymousUserBillingForm, BillingAddressesForm,
     BillingWithoutShippingAddressForm)
 from ...userprofile.forms import get_address_form
 from ...userprofile.models import Address
+from ...order import OrderStatus
 
 
 def create_order(checkout):
@@ -22,7 +24,10 @@ def create_order(checkout):
         return None, redirect('checkout:summary')
     checkout.clear_storage()
     checkout.cart.clear()
-    order.create_history_entry()
+    user = None if checkout.user.is_anonymous else checkout.user
+    order.create_history_entry(
+        status=OrderStatus.OPEN, user=user, comment=pgettext_lazy(
+            'Order status history entry', 'Order was placed'))
     order.send_confirmation_email()
     return order, redirect('order:payment', token=order.token)
 
@@ -32,11 +37,14 @@ def handle_order_placement(request, checkout):
 
     This is a helper function.
     """
-    order, redirect = create_order(checkout)
+    try:
+        order, redirect_url = create_order(checkout)
+    except InsufficientStock:
+        return redirect('cart:index')
     if not order:
         msg = pgettext('Checkout warning', 'Please review your checkout.')
         messages.warning(request, msg)
-    return redirect
+    return redirect_url
 
 
 def get_billing_forms_with_shipping(

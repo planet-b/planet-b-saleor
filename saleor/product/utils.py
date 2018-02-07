@@ -1,21 +1,16 @@
 from collections import defaultdict, namedtuple
-
-from six import iteritems
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.utils.encoding import smart_text
 from django_prices.templatetags import prices_i18n
+from prices import Price, PriceRange
 
+from . import ProductAvailabilityStatus, VariantAvailabilityStatus
 from ..cart.utils import get_cart_from_request, get_or_create_cart_from_request
 from ..core.utils import to_local_currency
 from .forms import ProductForm
-from . import ProductAvailabilityStatus, VariantAvailabilityStatus
-
-try:
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib import urlencode
 
 
 def products_visible_to_user(user):
@@ -34,12 +29,6 @@ def products_with_details(user):
         'product_class__variant_attributes__values',
         'product_class__product_attributes__values')
     return products
-
-
-def products_for_api(user):
-    products = products_visible_to_user(user)
-    return products.prefetch_related(
-        'images', 'categories', 'variants', 'variants__stock')
 
 
 def products_for_homepage():
@@ -116,8 +105,7 @@ def handle_cart_form(request, product, create_cart=False):
 
 def products_for_cart(user):
     products = products_visible_to_user(user)
-    products = products.prefetch_related(
-        'variants', 'variants__variant_images__image')
+    products = products.prefetch_related('variants__variant_images__image')
     return products
 
 
@@ -193,7 +181,7 @@ def get_variant_picker_data(product, discounts=None, local_currency=None):
             'schemaData': schema_data}
         data['variants'].append(variant_data)
 
-        for variant_key, variant_value in iteritems(variant.attributes):
+        for variant_key, variant_value in variant.attributes.items():
             filter_available_variants[int(variant_key)].append(
                 int(variant_value))
 
@@ -312,3 +300,67 @@ def get_variant_availability_status(variant):
         return VariantAvailabilityStatus.OUT_OF_STOCK
     else:
         return VariantAvailabilityStatus.AVAILABLE
+
+
+def get_product_costs_data(product):
+    zero_price = Price(0, 0, currency=settings.DEFAULT_CURRENCY)
+    zero_price_range = PriceRange(zero_price, zero_price)
+    purchase_costs_range = zero_price_range
+    gross_margin = (0, 0)
+
+    if not product.variants.exists():
+        return purchase_costs_range, gross_margin
+
+    variants = product.variants.all()
+    costs, margins = get_cost_data_from_variants(variants)
+
+    if costs:
+        purchase_costs_range = PriceRange(min(costs), max(costs))
+    if margins:
+        gross_margin = (margins[0], margins[-1])
+    return purchase_costs_range, gross_margin
+
+
+def sort_cost_data(costs, margins):
+    costs = sorted(costs, key=lambda x: x.gross)
+    margins = sorted(margins)
+    return costs, margins
+
+
+def get_cost_data_from_variants(variants):
+    costs = []
+    margins = []
+    for variant in variants:
+        costs_data = get_variant_costs_data(variant)
+        costs += costs_data['costs']
+        margins += costs_data['margins']
+    return sort_cost_data(costs, margins)
+
+
+def get_variant_costs_data(variant):
+    costs = []
+    margins = []
+    for stock in variant.stock.all():
+        costs.append(get_cost_price(stock))
+        margin = get_margin_for_variant(stock)
+        if margin:
+            margins.append(margin)
+    costs = sorted(costs, key=lambda x: x.gross)
+    margins = sorted(margins)
+    return {'costs': costs, 'margins': margins}
+
+
+def get_cost_price(stock):
+    zero_price = Price(0, 0, currency=settings.DEFAULT_CURRENCY)
+    if not stock.cost_price:
+        return zero_price
+    return stock.cost_price
+
+
+def get_margin_for_variant(stock):
+    if not stock.cost_price:
+        return None
+    price = stock.variant.get_price_per_item()
+    margin = price - stock.cost_price
+    percent = round((margin.gross / price.gross) * 100, 0)
+    return percent

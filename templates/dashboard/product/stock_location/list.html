@@ -12,8 +12,8 @@
 
 {% block header_extra %}
   {% if perms.product.edit_stock_location %}
-    <div class="fixed-action-btn">
-      <a class="btn-fab btn-floating btn-large waves-effect waves-light teal" href="{% url 'dashboard:product-stock-location-add' %}" title="{% trans "Add stock location" context "Stock location list add button text" %}">
+    <div class="btn-fab-fixed">
+      <a class="btn-fab-default waves-effect waves-light" href="{% url 'dashboard:product-stock-location-add' %}" title="{% trans "Add stock location" context "Stock location list add button text" %}">
         <svg data-src="{% static "dashboard/images/add.svg" %}" />
       </a>
     </div>
@@ -32,27 +32,45 @@
 
 {% block content %}
   <div class="row">
-    <div class="col s12">
+    <div class="col s12 l9">
       {% if locations %}
-        <ul class="collection list">
-          {% for location in locations %}
-            <li class="collection-item list-item">
-              <a href="{% if perms.product.edit_stock_location %}{% url 'dashboard:product-stock-location-edit' location.pk %}{% endif %}">
-                <p class="list-item-name--single">
-                  {{ location }}
-                </p>
-              </a>
-            </li>
-          {% endfor %}
-        </ul>
+        <div class="card">
+          <div class="data-table-container">
+            <table class="highlight bordered data-table">
+              <thead>
+                <tr>
+                  {% trans "Name" context "Dashboard stock location table header name" as label %}
+                  {% sorting_header 'name' label is_wide=True %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for location in locations %}
+                  <tr data-action-go="
+                      {% if perms.product.edit_stock_location %}{% url 'dashboard:product-stock-location-edit' location.pk %}{% endif %}">
+                    <td>{{ location }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
         {% paginate locations %}
       {% else %}
-        <div class="not-found">
-          <p class="grey-text">
-            {% trans "No locations found." context "Empty stock location list message" %}
-          </p>
-        </div>
+        {% if is_empty %}
+          {% include 'dashboard/product/stock_location/zero_page.html' %}
+        {% else %}
+          <div class="col s12">
+            <div class="not-found">
+              <p class="grey-text">
+                {% trans "No locations found." context "Empty stock location list message" %}
+              </p>
+            </div>
+          </div>
+        {% endif %}
       {% endif %}
+    </div>
+    <div class="col s12 l3" id="filters">
+      {% if not is_empty %}{% filters filter_set %}{% endif %}
     </div>
   </div>
 {% endblock %}

@@ -1,8 +1,8 @@
-from __future__ import unicode_literals
+"""Cart-related context processors."""
 from .utils import get_cart_from_request
 
 
 def cart_counter(request):
-    """ Return number of items from cart """
+    """Expose the number of items in cart."""
     cart = get_cart_from_request(request)
     return {'cart_counter': cart.quantity}

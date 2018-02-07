@@ -1,30 +1,35 @@
-from __future__ import unicode_literals
-
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import permission_required
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.utils.translation import pgettext_lazy
 
 from .emails import send_set_password_email
+from .filters import StaffFilter
 from .forms import StaffForm
-from ..views import superuser_required
+from ..views import staff_member_required
 from ...core.utils import get_paginator_items
-from ...settings import DASHBOARD_PAGINATE_BY
 from ...userprofile.models import User
 
 
-@superuser_required
+@staff_member_required
+@permission_required('userprofile.view_staff')
 def staff_list(request):
-    staff_members = (User.objects.filter(is_staff=True)
-                     .prefetch_related('default_billing_address')
-                     .order_by('email'))
+    staff_members = User.objects.filter(is_staff=True).prefetch_related(
+        'default_billing_address').order_by('email')
+    staff_filter = StaffFilter(request.GET, queryset=staff_members)
     staff_members = get_paginator_items(
-        staff_members, DASHBOARD_PAGINATE_BY, request.GET.get('page'))
-    ctx = {'staff': staff_members}
+        staff_filter.qs, settings.DASHBOARD_PAGINATE_BY,
+        request.GET.get('page'))
+    ctx = {
+        'staff': staff_members, 'filter_set': staff_filter,
+        'is_empty': not staff_filter.queryset.exists()}
     return TemplateResponse(request, 'dashboard/staff/list.html', ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('userprofile.edit_staff')
 def staff_details(request, pk):
     queryset = User.objects.filter(is_staff=True)
     staff_member = get_object_or_404(queryset, pk=pk)
@@ -40,7 +45,8 @@ def staff_details(request, pk):
     return TemplateResponse(request, 'dashboard/staff/detail.html', ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('userprofile.edit_staff')
 def staff_create(request):
     staff = User()
     form = StaffForm(request.POST or None, instance=staff)
@@ -55,7 +61,8 @@ def staff_create(request):
     return TemplateResponse(request, 'dashboard/staff/detail.html', ctx)
 
 
-@superuser_required
+@staff_member_required
+@permission_required('userprofile.edit_staff')
 def staff_delete(request, pk):
     queryset = User.objects.prefetch_related(
         'orders')
@@ -64,7 +71,7 @@ def staff_delete(request, pk):
     if request.method == 'POST':
         staff.delete()
         msg = pgettext_lazy(
-            'Dashboard message', 'Deleted staff member %s') % staff
+            'Dashboard message', 'Removed staff member %s') % staff
         messages.success(request, msg)
         return redirect('dashboard:staff-list')
     return TemplateResponse(

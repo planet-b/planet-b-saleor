@@ -49,7 +49,8 @@ var providePlugin = new webpack.ProvidePlugin({
   $: 'jquery',
   jQuery: 'jquery',
   'window.jQuery': 'jquery',
-  'Popper': 'popper.js'
+  'Popper': 'popper.js',
+  'query-string': 'query-string'
 });
 
 var faviconsWebpackPlugin = new FaviconsWebpackPlugin({
@@ -61,8 +62,8 @@ var faviconsWebpackPlugin = new FaviconsWebpackPlugin({
 var config = {
   entry: {
     dashboard: './saleor/static/dashboard/js/dashboard.js',
+    document: './saleor/static/dashboard/js/document.js',
     storefront: './saleor/static/js/storefront.js',
-    document: './saleor/static/dashboard/scss/document.scss',
     vendor: [
       'babel-es6-polyfill',
       'bootstrap',

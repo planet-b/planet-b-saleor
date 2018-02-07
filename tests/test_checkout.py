@@ -1,8 +1,10 @@
-import pytest
+from unittest.mock import MagicMock, Mock
+
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
-from mock import MagicMock, Mock
 from prices import Price
+import pytest
+from satchless.item import InsufficientStock
 
 from saleor.checkout import views
 from saleor.checkout.core import STORAGE_SESSION_KEY, Checkout
@@ -120,9 +122,9 @@ def test_checkout_shipping_address_setter():
     checkout.shipping_address = address
     assert checkout._shipping_address == address
     assert checkout.storage['shipping_address'] == {
-        'city': u'', 'city_area': u'', 'company_name': u'', 'country': '', 'phone': u'',
-        'country_area': u'', 'first_name': 'Jan', 'id': None, 'last_name': 'Kowalski',
-        'postal_code': u'', 'street_address_1': u'', 'street_address_2': u''}
+        'city': '', 'city_area': '', 'company_name': '', 'country': '', 'phone': '',
+        'country_area': '', 'first_name': 'Jan', 'id': None, 'last_name': 'Kowalski',
+        'postal_code': '', 'street_address_1': '', 'street_address_2': ''}
 
 
 @pytest.mark.parametrize('shipping_address, shipping_method, value', [
@@ -201,3 +203,18 @@ def test_checkout_discount(request_cart, sale, product_in_stock):
     request_cart.add(variant, 1)
     checkout = Checkout(request_cart, AnonymousUser(), 'tracking_code')
     assert checkout.get_total() == Price(currency="USD", net=5)
+
+
+def test_checkout_create_order_insufficient_stock(
+        request_cart, customer_user, product_in_stock, billing_address,
+        shipping_method):
+    product_class = product_in_stock.product_class
+    product_class.is_shipping_required = False
+    product_class.save()
+    customer_user.default_billing_address = billing_address
+    customer_user.save()
+    variant = product_in_stock.variants.get()
+    request_cart.add(variant, quantity=10, check_quantity=False)
+    checkout = Checkout(request_cart, customer_user, 'tracking_code')
+    with pytest.raises(InsufficientStock):
+        checkout.create_order()

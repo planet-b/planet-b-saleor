@@ -1,14 +1,20 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import (
     AbstractBaseUser, BaseUserManager, PermissionsMixin)
 from django.db import models
 from django.forms.models import model_to_dict
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import pgettext_lazy
 from django_countries.fields import Country, CountryField
-from ..search import index
+from phonenumber_field.modelfields import PhoneNumberField
+
+from .validators import validate_possible_number
+
+
+class PossiblePhoneNumberField(PhoneNumberField):
+    """
+    Less strict rule for phone numbers written to database.
+    """
+    default_validators = [validate_possible_number]
 
 
 class AddressManager(models.Manager):
@@ -41,7 +47,6 @@ class AddressManager(models.Manager):
         return address
 
 
-@python_2_unicode_compatible
 class Address(models.Model):
     first_name = models.CharField(
         pgettext_lazy('Address field', 'given name'),
@@ -72,18 +77,14 @@ class Address(models.Model):
     country_area = models.CharField(
         pgettext_lazy('Address field', 'state or province'),
         max_length=128, blank=True)
-    phone = models.CharField(
-        pgettext_lazy('Address field', 'phone number'),
-        max_length=30, blank=True)
+    phone = PossiblePhoneNumberField(
+        verbose_name=pgettext_lazy('Address field', 'phone number'),
+        blank=True, default='')
     objects = AddressManager()
 
     @property
     def full_name(self):
         return '%s %s' % (self.first_name, self.last_name)
-
-    class Meta:
-        verbose_name = pgettext_lazy('Address model', 'address')
-        verbose_name_plural = pgettext_lazy('Address model', 'addresses')
 
     def __str__(self):
         if self.company_name:
@@ -121,7 +122,7 @@ class UserManager(BaseUserManager):
             email, password, is_staff=True, is_superuser=True, **extra_fields)
 
 
-class User(PermissionsMixin, AbstractBaseUser, index.Indexed):
+class User(PermissionsMixin, AbstractBaseUser):
     email = models.EmailField(
         pgettext_lazy('User field', 'email'), unique=True)
     addresses = models.ManyToManyField(
@@ -149,17 +150,22 @@ class User(PermissionsMixin, AbstractBaseUser, index.Indexed):
 
     objects = UserManager()
 
-    search_fields = [
-        index.SearchField('email')]
-
     class Meta:
-        verbose_name = pgettext_lazy('User model', 'user')
-        verbose_name_plural = pgettext_lazy('User model', 'users')
         permissions = (
             ('view_user',
              pgettext_lazy('Permission description', 'Can view users')),
             ('edit_user',
-             pgettext_lazy('Permission description', 'Can edit users')))
+             pgettext_lazy('Permission description', 'Can edit users')),
+            ('view_group',
+             pgettext_lazy('Permission description', 'Can view groups')),
+            ('edit_group',
+             pgettext_lazy('Permission description', 'Can edit groups')),
+            ('view_staff',
+             pgettext_lazy('Permission description', 'Can view staff')),
+            ('edit_staff',
+             pgettext_lazy('Permission description', 'Can edit staff')),
+            ('impersonate_user',
+             pgettext_lazy('Permission description', 'Can impersonate users')))
 
     def get_full_name(self):
         return self.email

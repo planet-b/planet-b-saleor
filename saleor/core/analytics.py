@@ -1,7 +1,7 @@
 import uuid
 
-from django.conf import settings
 import google_measurement_protocol as ga
+from django.conf import settings
 
 FINGERPRINT_PARTS = [
     'HTTP_ACCEPT_ENCODING',
@@ -15,7 +15,8 @@ UUID_NAMESPACE = uuid.UUID('fb4abc05-e2fb-4e3e-8b78-28037ef7d07f')
 
 def get_client_id(request):
     parts = [request.META.get(key, '') for key in FINGERPRINT_PARTS]
-    return uuid.uuid5(UUID_NAMESPACE, '_'.join(parts))
+    name = '_'.join(parts)
+    return uuid.uuid5(UUID_NAMESPACE, name)
 
 
 def _report(client_id, what, extra_info=None, extra_headers=None):
@@ -46,5 +47,5 @@ def report_order(client_id, order):
                  for oi in group]
         trans = ga.Transaction('%s-%s' % (order.id, group.id), items,
                                revenue=group.get_total(),
-                               shipping=group.shipping_price)
+                               shipping=group.order.shipping_price)
         _report(client_id, trans, {})

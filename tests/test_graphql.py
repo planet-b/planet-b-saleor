@@ -1,4 +1,5 @@
 import json
+
 import pytest
 
 from saleor.product.models import Category, ProductAttribute

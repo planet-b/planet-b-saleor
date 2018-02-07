@@ -1,13 +1,14 @@
-from django.core.urlresolvers import reverse_lazy
 from django.conf import settings
-from django.contrib import messages, auth
+from django.contrib import auth, messages
 from django.contrib.auth import views as django_views
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
-from django.utils.translation import ugettext_lazy as _
 from django.template.response import TemplateResponse
+from django.urls import reverse_lazy
+from django.utils.translation import ugettext_lazy as _
 
 from saleor.cart.utils import find_and_assign_anonymous_cart
+
 from .forms import LoginForm, PasswordSetUpForm, SignupForm
 
 
@@ -31,12 +32,13 @@ def signup(request):
         form.save()
         password = form.cleaned_data.get('password')
         email = form.cleaned_data.get('email')
-        user = auth.authenticate(request=request, email=email,
-                                 password=password)
+        user = auth.authenticate(
+            request=request, email=email, password=password)
         if user:
             auth.login(request, user)
         messages.success(request, _('User has been created'))
-        return redirect(settings.LOGIN_REDIRECT_URL)
+        redirect_url = request.POST.get('next', settings.LOGIN_REDIRECT_URL)
+        return redirect(redirect_url)
     ctx = {'form': form}
     return TemplateResponse(request, 'account/signup.html', ctx)
 

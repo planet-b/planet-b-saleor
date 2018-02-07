@@ -1,6 +1,12 @@
 @mixin data-table {
   &-container {
     overflow: auto;
+    .avatar {
+      padding: 0;
+      img {
+        vertical-align: middle;
+      }
+    }
   }
 
   &-action {
@@ -11,6 +17,40 @@
   &-header-action {
     border-bottom: 1px solid $table-border-color;
     padding: 14px 8px;
+  }
+
+  &-header-alternative {
+    box-shadow: none;
+    transition: $transition-duration;
+    max-height: 0;
+    overflow: hidden;
+    .show-single, .show-bulk {
+      display: none;
+    }
+    &.bulk {
+      background: #fff;
+      color: $off-black;
+      max-height: 100px;
+      border-bottom: 1px #d0d0d0 solid;
+      .show-bulk {
+        display: block;
+      }
+      th, a {
+        color: color('teal', 'base');
+      }
+      .data-table-header-action-selected-items {
+        margin-left: 13px;
+      }
+    }
+    &.single {
+      background: #fff;
+      .show-single {
+        display: block;
+      }
+      th, a {
+        color: $secondary-color;
+      }
+    }
   }
 
   &-header {
@@ -35,6 +75,14 @@
     padding: 0 24px;
   }
 
+  &.last-right-align {
+    td, th {
+      &:last-child {
+        text-align: right;
+      }
+    }
+  }
+
   input[type=checkbox].filled-in + label {
     margin-top: 5px;
     padding: 0;
@@ -45,7 +93,14 @@
     }
   }
 
-  tr[data-action-go]>td:not(.ignore-link):hover {
+  tr {
+    &.last-no-border {
+      &:last-of-type {
+        border-bottom: none;
+      }
+    }
+    &[data-action-go] > td:not(.ignore-link):hover {
+    }
     cursor: pointer;
   }
 
@@ -77,6 +132,11 @@
       padding: 0;
     }
 
+    &.nowrap {
+      white-space: normal;
+      padding: 10px 24px;
+    }
+
     .dropdown-button {
       color: inherit;
       display: inline-block;
@@ -87,13 +147,39 @@
   }
 
   th {
-    color: map_get($grey, darken-1);
     font-weight: normal;
     font-size: 12px;
     height: 56px;
+    color: $grey-color;
+    svg {
+      display: none;
+    }
+    &.active {
+      a {
+        font-weight: 600;
+        color: lighten(#000, 13%);
+        padding-right: 16px;
+      }
+      svg {
+        display: inline-block;
+        fill: lighten(#000, 13%);
+        position: absolute;
+        top: -2px;
+        right: -4px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+    a {
+      position: relative;
+      color: $grey-color;
+      &:hover {
+        color: darken($grey-color, 15%);
+      }
+    }
   }
 
-  tfoot {
+  tfoot:not(.no-bold) {
     font-weight: bold;
   }
 

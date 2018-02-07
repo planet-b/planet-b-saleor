@@ -7,8 +7,8 @@ from django.utils.translation import pgettext_lazy
 
 from ...core.utils import get_paginator_items
 from ...discount.models import Sale, Voucher
-from ...settings import DASHBOARD_PAGINATE_BY
 from ..views import staff_member_required
+from .filters import SaleFilter, VoucherFilter
 from . import forms
 
 
@@ -16,26 +16,26 @@ from . import forms
 @permission_required('discount.view_sale')
 def sale_list(request):
     sales = Sale.objects.prefetch_related('products').order_by('name')
+    sale_filter = SaleFilter(request.GET, queryset=sales)
     sales = get_paginator_items(
-        sales, DASHBOARD_PAGINATE_BY, request.GET.get('page'))
-    ctx = {'sales': sales}
+        sale_filter.qs, settings.DASHBOARD_PAGINATE_BY,
+        request.GET.get('page'))
+    ctx = {
+        'sales': sales, 'filter_set': sale_filter,
+        'is_empty': not sale_filter.queryset.exists()}
     return TemplateResponse(request, 'dashboard/discount/sale/list.html', ctx)
 
 
 @staff_member_required
 @permission_required('discount.edit_sale')
 def sale_edit(request, pk=None):
-    if pk:
-        instance = get_object_or_404(Sale, pk=pk)
-    else:
-        instance = Sale()
-    form = forms.SaleForm(
-        request.POST or None, instance=instance)
+    instance = get_object_or_404(Sale, pk=pk) if pk else Sale()
+    form = forms.SaleForm(request.POST or None, instance=instance)
     if form.is_valid():
         instance = form.save()
-        msg = pgettext_lazy(
-            'Sale (discount) message', 'Updated sale') if pk else pgettext_lazy(
-                'Sale (discount) message', 'Added sale')
+        msg = (
+            pgettext_lazy('Sale (discount) message', 'Updated sale') if pk
+            else pgettext_lazy('Sale (discount) message', 'Added sale'))
         messages.success(request, msg)
         return redirect('dashboard:sale-update', pk=instance.pk)
     ctx = {'sale': instance, 'form': form}
@@ -48,9 +48,9 @@ def sale_delete(request, pk):
     instance = get_object_or_404(Sale, pk=pk)
     if request.method == 'POST':
         instance.delete()
-        messages.success(
-            request,
-            pgettext_lazy('Sale (discount) message', 'Deleted sale %s') % (instance.name,))
+        msg = pgettext_lazy(
+            'Sale (discount) message', 'Removed sale %s') % (instance.name,)
+        messages.success(request, msg)
         return redirect('dashboard:sale-list')
     ctx = {'sale': instance}
     return TemplateResponse(
@@ -62,9 +62,13 @@ def sale_delete(request, pk):
 def voucher_list(request):
     vouchers = (Voucher.objects.select_related('product', 'category')
                 .order_by('name'))
+    voucher_filter = VoucherFilter(request.GET, queryset=vouchers)
     vouchers = get_paginator_items(
-        vouchers, DASHBOARD_PAGINATE_BY, request.GET.get('page'))
-    ctx = {'vouchers': vouchers}
+        voucher_filter.qs, settings.DASHBOARD_PAGINATE_BY,
+        request.GET.get('page'))
+    ctx = {
+        'vouchers': vouchers, 'filter_set': voucher_filter,
+        'is_empty': not voucher_filter.queryset.exists()}
     return TemplateResponse(
         request, 'dashboard/discount/voucher/list.html', ctx)
 
@@ -103,7 +107,7 @@ def voucher_edit(request, pk=None):
                 'Voucher message', 'Updated voucher') if pk else pgettext_lazy(
                     'Voucher message', 'Added voucher')
             messages.success(request, msg)
-            return redirect('dashboard:voucher-update', pk=instance.pk)
+            return redirect('dashboard:voucher-list')
     ctx = {
         'voucher': instance, 'default_currency': settings.DEFAULT_CURRENCY,
         'form': voucher_form, 'type_base_forms': type_base_forms}
@@ -117,9 +121,9 @@ def voucher_delete(request, pk):
     instance = get_object_or_404(Voucher, pk=pk)
     if request.method == 'POST':
         instance.delete()
-        messages.success(
-            request,
-            pgettext_lazy('Voucher message', 'Deleted voucher %s') % (instance,))
+        msg = pgettext_lazy(
+            'Voucher message', 'Removed voucher %s') % (instance,)
+        messages.success(request, msg)
         return redirect('dashboard:voucher-list')
     ctx = {'voucher': instance}
     return TemplateResponse(

@@ -1,7 +1,7 @@
 from django.utils.translation import pgettext_lazy
 
 
-class ProductAvailabilityStatus(object):
+class ProductAvailabilityStatus:
     NOT_PUBLISHED = 'not-published'
     VARIANTS_MISSSING = 'variants-missing'
     NOT_CARRIED = 'not-carried'
@@ -30,7 +30,7 @@ class ProductAvailabilityStatus(object):
             raise NotImplementedError('Unknown status: %s' % status)
 
 
-class VariantAvailabilityStatus(object):
+class VariantAvailabilityStatus:
     AVAILABLE = 'available'
     NOT_CARRIED = 'not-carried'
     OUT_OF_STOCK = 'out-of-stock'

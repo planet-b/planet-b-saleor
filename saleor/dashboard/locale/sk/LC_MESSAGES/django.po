@@ -8,9 +8,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: master\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-10-11 08:30-0500\n"
+"POT-Creation-Date: 2017-11-27 16:26-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Mato <mato@jansto.sk>, 2017\n"
+"Last-Translator: Martin Janšto <mato@jansto.sk>, 2017\n"
 "Language-Team: Slovak (https://www.transifex.com/mirumee/teams/34782/sk/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -33,8 +33,14 @@ msgstr "Upravená kategória %s"
 #: saleor/dashboard/category/views.py:84
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted category %s"
-msgstr "Zmazaná kategória %s"
+msgid "Removed category %s"
+msgstr ""
+
+#: saleor/dashboard/customer/views.py:55
+#, python-format
+msgctxt "Dashboard message"
+msgid "Customer %s promoted to staff member"
+msgstr ""
 
 #: saleor/dashboard/discount/forms.py:25
 msgctxt "Sale (discount) error"
@@ -69,46 +75,41 @@ msgstr "Pridaná zľava"
 #: saleor/dashboard/discount/views.py:53
 #, python-format
 msgctxt "Sale (discount) message"
-msgid "Deleted sale %s"
-msgstr "Zmazaná zľava %s"
+msgid "Removed sale %s"
+msgstr ""
 
-#: saleor/dashboard/discount/views.py:102
+#: saleor/dashboard/discount/views.py:103
 msgctxt "Voucher message"
 msgid "Updated voucher"
 msgstr "Upravený kupón"
 
-#: saleor/dashboard/discount/views.py:103
+#: saleor/dashboard/discount/views.py:104
 msgctxt "Voucher message"
 msgid "Added voucher"
 msgstr "Pridaný kupón"
 
-#: saleor/dashboard/discount/views.py:121
+#: saleor/dashboard/discount/views.py:122
 #, python-format
 msgctxt "Voucher message"
-msgid "Deleted voucher %s"
-msgstr "Zmazaný kupón %s"
+msgid "Removed voucher %s"
+msgstr ""
 
-#: saleor/dashboard/group/views.py:30
+#: saleor/dashboard/group/views.py:37
 msgctxt "Dashboard message"
 msgid "Created group"
 msgstr ""
 
-#: saleor/dashboard/group/views.py:44
+#: saleor/dashboard/group/views.py:52
 #, python-format
 msgctxt "Dashboard message"
 msgid "Updated group %s"
 msgstr ""
 
-#: saleor/dashboard/group/views.py:58
+#: saleor/dashboard/group/views.py:67
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted group %s"
+msgid "Removed group %s"
 msgstr ""
-
-#: saleor/dashboard/order/forms.py:27
-msgctxt "Order note form placeholder"
-msgid "Note"
-msgstr "Note"
 
 #: saleor/dashboard/order/forms.py:36
 msgctxt "Payment management form (capture, refund, release)"
@@ -157,7 +158,7 @@ msgctxt "Change quantity form label"
 msgid "Quantity"
 msgstr "Množstvo"
 
-#: saleor/dashboard/order/forms.py:194
+#: saleor/dashboard/order/forms.py:192
 #, python-format
 msgctxt "Change quantity form error"
 msgid "Only %(remaining)d remaining in stock."
@@ -196,24 +197,30 @@ msgctxt "Payment status field value"
 msgid "All"
 msgstr "Všetky"
 
-#: saleor/dashboard/order/views.py:93
+#: saleor/dashboard/order/forms.py:337
+#, python-format
+msgctxt "Change stock form error"
+msgid "Only %(remaining)d remaining in this stock."
+msgstr ""
+
+#: saleor/dashboard/order/views.py:96
 msgctxt "Dashboard message related to an order"
 msgid "Added note"
 msgstr "Pridaná poznámka"
 
-#: saleor/dashboard/order/views.py:116
+#: saleor/dashboard/order/views.py:119
 #, python-format
 msgctxt "Dashboard message related to a payment"
 msgid "Captured %(amount)s"
 msgstr "Zachytená %(amount)s"
 
-#: saleor/dashboard/order/views.py:139
+#: saleor/dashboard/order/views.py:142
 #, python-format
 msgctxt "Dashboard message related to a payment"
 msgid "Refunded %(amount)s"
 msgstr "Vrátená %(amount)s"
 
-#: saleor/dashboard/order/views.py:157
+#: saleor/dashboard/order/views.py:160
 msgctxt "Dashboard message"
 msgid "Released payment"
 msgstr "Uvolnená platba"
@@ -276,6 +283,22 @@ msgctxt "Dashboard message"
 msgid "Removed voucher from order"
 msgstr "Vymazaný kupón s objednávky"
 
+#: saleor/dashboard/order/views.py:404
+#, python-format
+msgctxt "Dashboard message"
+msgid "Stock location changed for %s"
+msgstr ""
+
+#: saleor/dashboard/product/__init__.py:10
+msgctxt "product bulk action"
+msgid "Publish"
+msgstr ""
+
+#: saleor/dashboard/product/__init__.py:11
+msgctxt "product bulk action"
+msgid "Unpublish"
+msgstr ""
+
 #: saleor/dashboard/product/forms.py:25
 msgctxt "Product class form label"
 msgid "Product type"
@@ -326,127 +349,210 @@ msgctxt "Product form placeholder"
 msgid "Search"
 msgstr "Vyhľadávanie"
 
-#: saleor/dashboard/product/views.py:50
+#: saleor/dashboard/product/views.py:52
 #, python-format
 msgctxt "Dashboard message"
 msgid "Added product type %s"
 msgstr "Pridaný typ produktu %s"
 
-#: saleor/dashboard/product/views.py:69
+#: saleor/dashboard/product/views.py:72
 #, python-format
 msgctxt "Dashboard message"
 msgid "Updated product type %s"
 msgstr "Zmenený typ produktu %s"
 
-#: saleor/dashboard/product/views.py:88
+#: saleor/dashboard/product/views.py:92
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted product type %s"
-msgstr "Vymazaný typ produktu %s"
+msgid "Removed product type %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:139
+#: saleor/dashboard/product/views.py:145
 #, python-format
 msgctxt "Dashboard message"
 msgid "Added product %s"
 msgstr "Pridaný  produkt %s"
 
-#: saleor/dashboard/product/views.py:211
+#: saleor/dashboard/product/views.py:220
 #, python-format
 msgctxt "Dashboard message"
 msgid "Updated product %s"
 msgstr "Zmenený produkt %s"
 
-#: saleor/dashboard/product/views.py:227
+#: saleor/dashboard/product/views.py:236
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted product %s"
-msgstr "Vymazaný produkt %s"
+msgid "Removed product %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:262
+#: saleor/dashboard/product/views.py:271
 msgctxt "Dashboard message"
 msgid "Saved stock"
 msgstr "Uložený sklad"
 
-#: saleor/dashboard/product/views.py:283
+#: saleor/dashboard/product/views.py:292
 msgctxt "Dashboard message"
-msgid "Deleted stock"
-msgstr "Vymazaný sklad"
+msgid "Removed stock"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:321
+#: saleor/dashboard/product/views.py:330
 #, python-format
 msgctxt "Dashboard message"
 msgid "Updated image %s"
 msgstr "Zmenený obrázok %s"
 
-#: saleor/dashboard/product/views.py:325
+#: saleor/dashboard/product/views.py:334
 #, python-format
 msgctxt "Dashboard message"
 msgid "Added image %s"
 msgstr "Pridaný obrázok %s"
 
-#: saleor/dashboard/product/views.py:346
+#: saleor/dashboard/product/views.py:355
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted image %s"
-msgstr "Vymazaný obrázok %s"
+msgid "Removed image %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:370
+#: saleor/dashboard/product/views.py:379
 #, python-format
 msgctxt "Dashboard message"
 msgid "Saved variant %s"
 msgstr ""
 
-#: saleor/dashboard/product/views.py:437
+#: saleor/dashboard/product/views.py:448
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted variant %s"
-msgstr "Vymazaný variant %s"
+msgid "Removed variant %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:486
+#: saleor/dashboard/product/views.py:497
 msgctxt "Dashboard message"
 msgid "Updated attribute"
 msgstr "Upravený atribut"
 
-#: saleor/dashboard/product/views.py:487
+#: saleor/dashboard/product/views.py:498
 msgctxt "Dashboard message"
 msgid "Added attribute"
 msgstr "Pridaný atribut"
 
-#: saleor/dashboard/product/views.py:506
+#: saleor/dashboard/product/views.py:518
 #, python-format
 msgctxt "Dashboard message"
-msgid "Deleted attribute %s"
-msgstr "Vymazaný atribut %s"
+msgid "Removed attribute %s"
+msgstr ""
 
-#: saleor/dashboard/product/views.py:539
+#: saleor/dashboard/product/views.py:540
+msgctxt "Dashboard message"
+msgid "Updated attribute's value"
+msgstr ""
+
+#: saleor/dashboard/product/views.py:542
+msgctxt "Dashboard message"
+msgid "Added attribute's value"
+msgstr ""
+
+#: saleor/dashboard/product/views.py:562
+#, python-format
+msgctxt "Dashboard message"
+msgid "Removed attribute's value %s"
+msgstr ""
+
+#: saleor/dashboard/product/views.py:595
 msgctxt "Dashboard message for stock location"
 msgid "Updated location"
 msgstr "Upravená lokácia"
 
-#: saleor/dashboard/product/views.py:540
+#: saleor/dashboard/product/views.py:596
 msgctxt "Dashboard message for stock location"
 msgid "Added location"
 msgstr "Pridaná lokácia"
 
-#: saleor/dashboard/product/views.py:559
+#: saleor/dashboard/product/views.py:615
 #, python-format
 msgctxt "Dashboard message for stock location"
-msgid "Deleted location %s"
-msgstr "Zmazaná lokácia %s"
+msgid "Removed location %s"
+msgstr ""
 
-#: saleor/dashboard/shipping/views.py:32
+#: saleor/dashboard/product/views.py:664
 #, python-format
 msgctxt "Dashboard message"
-msgid "%(shipping_method_name)s method saved"
-msgstr "%(shipping_method_name)s metóda uložená"
+msgid "%(count)d product has been updated"
+msgid_plural "%(count)d products have been updated"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
-#: saleor/dashboard/shipping/views.py:73
+#: saleor/dashboard/shipping/views.py:39
+msgctxt "dashboard message"
+msgid "Updated shipping method"
+msgstr ""
+
+#: saleor/dashboard/shipping/views.py:41
+msgctxt "Dashboard message"
+msgid "Added shipping method"
+msgstr ""
+
+#: saleor/dashboard/shipping/views.py:71
 #, python-format
 msgctxt "Dashboard message"
-msgid "%(shipping_method_name)s successfully deleted"
-msgstr "%(shipping_method_name)s úspešne vymazaná"
+msgid "%(shipping_method_name)s successfully removed"
+msgstr ""
 
-#: saleor/dashboard/sites/views.py:29
+#: saleor/dashboard/shipping/views.py:92
 #, python-format
-msgid "Updated site %s"
-msgstr "Upravená stránka %s"
+msgctxt "Dashboard message"
+msgid "Updated country shipping price %s"
+msgstr ""
+
+#: saleor/dashboard/shipping/views.py:94
+#, python-format
+msgctxt "Dashboard message"
+msgid "Added shipping price for %s"
+msgstr ""
+
+#: saleor/dashboard/shipping/views.py:115
+#, python-format
+msgctxt "Dashboard message"
+msgid "Removed shipping method %s"
+msgstr ""
+
+#: saleor/dashboard/sites/views.py:36
+msgctxt "Dashboard message"
+msgid "Updated site settings"
+msgstr ""
+
+#: saleor/dashboard/sites/views.py:65
+#, python-format
+msgctxt "dashboard message"
+msgid "Updated authorization key %s"
+msgstr ""
+
+#: saleor/dashboard/sites/views.py:67
+#, python-format
+msgctxt "Dashboard message"
+msgid "Added authorization key %s"
+msgstr ""
+
+#: saleor/dashboard/sites/views.py:86
+#, python-format
+msgctxt "Dashboard message"
+msgid "Removed site authorization key %s"
+msgstr ""
+
+#: saleor/dashboard/staff/views.py:39
+#, python-format
+msgctxt "Dashboard message"
+msgid "Updated staff member %s"
+msgstr ""
+
+#: saleor/dashboard/staff/views.py:54
+#, python-format
+msgctxt "Dashboard message"
+msgid "Added staff member %s"
+msgstr ""
+
+#: saleor/dashboard/staff/views.py:72
+#, python-format
+msgctxt "Dashboard message"
+msgid "Removed staff member %s"
+msgstr ""

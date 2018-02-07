@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 
 from django.utils.translation import pgettext_lazy
@@ -8,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 class CartStatus:
+    """Enum of possible cart statuses."""
+
     OPEN = 'open'
     SAVED = 'saved'
     WAITING_FOR_PAYMENT = 'payment'

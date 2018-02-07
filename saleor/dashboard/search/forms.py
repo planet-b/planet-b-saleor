@@ -1,11 +1,9 @@
-from ...search.backends import get_search_backend
+from ...search.backends import picker
 from ...search.forms import SearchForm
 
 
 class DashboardSearchForm(SearchForm):
-
-    def search(self, queryset_map=None):
-        backend = get_search_backend('dashboard')
+    def search(self):
         query = self.cleaned_data['q']
-        results = backend.search(query, queryset_map=queryset_map)
-        return results
+        search = picker.pick_dashboard_backend()
+        return search(query)

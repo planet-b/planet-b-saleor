@@ -1,170 +1,147 @@
-from __future__ import unicode_literals
-
 from django import forms
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.shortcuts import get_object_or_404
+from django.urls import reverse_lazy
 from django.utils.translation import npgettext_lazy, pgettext_lazy
 from django_prices.forms import PriceField
 from payments import PaymentError, PaymentStatus
 from satchless.item import InsufficientStock
 
 from ...cart.forms import QuantityField
+from ...core.forms import AjaxSelect2ChoiceField
 from ...discount.models import Voucher
-from ...order import OrderStatus
-from ...order.models import DeliveryGroup, Order, OrderedItem, OrderNote
-from ...order.utils import cancel_order, cancel_delivery_group
-from ...product.models import ProductVariant, Stock
+from ...order import GroupStatus
+from ...order.models import DeliveryGroup, OrderLine, OrderNote
+from ...order.utils import (
+    add_variant_to_delivery_group, cancel_delivery_group, cancel_order,
+    change_order_line_quantity, merge_duplicates_into_order_line,
+    move_order_line_to_group, recalculate_order, remove_empty_groups
+)
+from ...product.models import Product, ProductVariant, Stock
 
 
 class OrderNoteForm(forms.ModelForm):
     class Meta:
         model = OrderNote
         fields = ['content']
-        widgets = {'content': forms.Textarea({
-            'rows': 5,
-            'placeholder': pgettext_lazy(
-                'Order note form placeholder', 'Note')})}
+        widgets = {
+            'content': forms.Textarea()
+        }
 
     def __init__(self, *args, **kwargs):
-        super(OrderNoteForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 class ManagePaymentForm(forms.Form):
     amount = PriceField(
         label=pgettext_lazy(
             'Payment management form (capture, refund, release)', 'Amount'),
-        max_digits=12, decimal_places=2, currency=settings.DEFAULT_CURRENCY)
+        max_digits=12,
+        decimal_places=2,
+        currency=settings.DEFAULT_CURRENCY)
 
     def __init__(self, *args, **kwargs):
         self.payment = kwargs.pop('payment')
-        super(ManagePaymentForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        if self.payment.status != self.clean_status:
+            raise forms.ValidationError(self.clean_error)
+
+    def payment_error(self, message):
+        self.add_error(None,
+                       pgettext_lazy('Payment form error',
+                                     'Payment gateway error: %s') % message)
+
+    def try_payment_action(self, action):
+        amount = self.cleaned_data['amount']
+        try:
+            action(amount.gross)
+        except (PaymentError, ValueError) as e:
+            self.payment_error(e.message)
+            return False
+        return True
 
 
 class CapturePaymentForm(ManagePaymentForm):
-    def clean(self):
-        if self.payment.status != PaymentStatus.PREAUTH:
-            raise forms.ValidationError(
-                pgettext_lazy(
-                    'Payment form error',
-                    'Only pre-authorized payments can be captured'))
+
+    clean_status = PaymentStatus.PREAUTH
+    clean_error = pgettext_lazy('Payment form error',
+                                'Only pre-authorized payments can be captured')
 
     def capture(self):
-        amount = self.cleaned_data['amount']
-        try:
-            self.payment.capture(amount.gross)
-        except (PaymentError, ValueError) as e:
-            self.add_error(
-                None,
-                pgettext_lazy(
-                    'Payment form error',
-                    'Payment gateway error: %s') % e.message)
-            return False
-        return True
+        return self.try_payment_action(self.payment.capture)
 
 
 class RefundPaymentForm(ManagePaymentForm):
-    def clean(self):
-        if self.payment.status != PaymentStatus.CONFIRMED:
-            raise forms.ValidationError(
-                pgettext_lazy(
-                    'Payment form error',
-                    'Only confirmed payments can be refunded'))
+
+    clean_status = PaymentStatus.CONFIRMED
+    clean_error = pgettext_lazy('Payment form error',
+                                'Only confirmed payments can be refunded')
 
     def refund(self):
-        amount = self.cleaned_data['amount']
-        try:
-            self.payment.refund(amount.gross)
-        except (PaymentError, ValueError) as e:
-            self.add_error(
-                None,
-                pgettext_lazy(
-                    'Payment form error',
-                    'Payment gateway error: %s') % e.message)
-            return False
-        return True
+        return self.try_payment_action(self.payment.refund)
 
 
-class ReleasePaymentForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        self.payment = kwargs.pop('payment')
-        super(ReleasePaymentForm, self).__init__(*args, **kwargs)
+class ReleasePaymentForm(ManagePaymentForm):
 
-    def clean(self):
-        if self.payment.status != PaymentStatus.PREAUTH:
-            raise forms.ValidationError(
-                pgettext_lazy(
-                    'Payment form error',
-                    'Only pre-authorized payments can be released'))
+    clean_status = PaymentStatus.PREAUTH
+    clean_error = pgettext_lazy('Payment form error',
+                                'Only pre-authorized payments can be released')
 
     def release(self):
-        try:
-            self.payment.release()
-        except (PaymentError, ValueError) as e:
-            self.add_error(
-                None,
-                pgettext_lazy(
-                    'Payment form error',
-                    'Payment gateway error: %s') % e.message)
-            return False
-        return True
+        return self.try_payment_action(self.payment.release)
 
 
-class MoveItemsForm(forms.Form):
-    NEW_SHIPMENT = 'new'
+class MoveLinesForm(forms.Form):
+    """ Moves part of products in order line to existing or new group.  """
     quantity = QuantityField(
-        label=pgettext_lazy('Move items form label', 'Quantity'),
+        label=pgettext_lazy('Move lines form label', 'Quantity'),
         validators=[MinValueValidator(1)])
-    target_group = forms.ChoiceField(
-        label=pgettext_lazy('Move items form label', 'Target shipment'))
+    target_group = forms.ModelChoiceField(
+        queryset=DeliveryGroup.objects.none(), required=False,
+        empty_label=pgettext_lazy(
+            'Shipment group value for `target_group` field',
+            'New shipment'),
+        label=pgettext_lazy('Move lines form label', 'Target shipment'))
 
     def __init__(self, *args, **kwargs):
-        self.item = kwargs.pop('item')
-        super(MoveItemsForm, self).__init__(*args, **kwargs)
+        self.line = kwargs.pop('line')
+        super().__init__(*args, **kwargs)
         self.fields['quantity'].validators.append(
-            MaxValueValidator(self.item.quantity))
+            MaxValueValidator(self.line.quantity))
         self.fields['quantity'].widget.attrs.update({
-            'max': self.item.quantity, 'min': 1})
-        self.fields['target_group'].choices = self.get_delivery_group_choices()
+            'max': self.line.quantity, 'min': 1})
+        self.old_group = self.line.delivery_group
+        queryset = self.old_group.order.groups.exclude(
+            pk=self.old_group.pk).exclude(status=GroupStatus.CANCELLED)
+        self.fields['target_group'].queryset = queryset
 
-    def get_delivery_group_choices(self):
-        group = self.item.delivery_group
-        groups = group.order.groups.exclude(pk=group.pk).exclude(
-            status='cancelled')
-        choices = [(self.NEW_SHIPMENT, pgettext_lazy(
-            'Delivery group value for `target_group` field',
-            'New shipment'))]
-        choices.extend([(g.pk, str(g)) for g in groups])
-        return choices
-
-    def move_items(self):
-        how_many = self.cleaned_data['quantity']
-        choice = self.cleaned_data['target_group']
-        old_group = self.item.delivery_group
-        if choice == self.NEW_SHIPMENT:
-            # For new group we use the same delivery name but zero price
-            target_group = old_group.order.groups.create(
-                status=old_group.status,
-                shipping_method_name=old_group.shipping_method_name)
-        else:
-            target_group = DeliveryGroup.objects.get(pk=choice)
-        OrderedItem.objects.move_to_group(self.item, target_group, how_many)
+    def move_lines(self):
+        how_many = self.cleaned_data.get('quantity')
+        target_group = self.cleaned_data.get('target_group')
+        if not target_group:
+            # For new group we use the same shipping name but zero price
+            target_group = self.old_group.order.groups.create(
+                status=self.old_group.status,
+                shipping_method_name=self.old_group.shipping_method_name)
+        move_order_line_to_group(self.line, target_group, how_many)
         return target_group
 
 
-class CancelItemsForm(forms.Form):
+class CancelLinesForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
-        self.item = kwargs.pop('item')
-        super(CancelItemsForm, self).__init__(*args, **kwargs)
+        self.line = kwargs.pop('line')
+        super().__init__(*args, **kwargs)
 
-    def cancel_item(self):
-        if self.item.stock:
-            Stock.objects.deallocate_stock(self.item.stock, self.item.quantity)
-        order = self.item.delivery_group.order
-        self.item.quantity = 0
-        OrderedItem.objects.remove_empty_groups(self.item)
-        Order.objects.recalculate_order(order)
+    def cancel_line(self):
+        if self.line.stock:
+            Stock.objects.deallocate_stock(self.line.stock, self.line.quantity)
+        order = self.line.delivery_group.order
+        self.line.quantity = 0
+        remove_empty_groups(self.line)
+        recalculate_order(order)
 
 
 class ChangeQuantityForm(forms.ModelForm):
@@ -173,27 +150,26 @@ class ChangeQuantityForm(forms.ModelForm):
         validators=[MinValueValidator(1)])
 
     class Meta:
-        model = OrderedItem
+        model = OrderLine
         fields = ['quantity']
 
     def __init__(self, *args, **kwargs):
-        self.variant = kwargs.pop('variant')
-        super(ChangeQuantityForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.initial_quantity = self.instance.quantity
         self.fields['quantity'].initial = self.initial_quantity
 
     def clean_quantity(self):
         quantity = self.cleaned_data['quantity']
         delta = quantity - self.initial_quantity
-        try:
-            self.variant.check_quantity(delta)
-        except InsufficientStock as e:
+        stock = self.instance.stock
+        if stock and delta > stock.quantity_available:
             raise forms.ValidationError(
                 npgettext_lazy(
                     'Change quantity form error',
                     'Only %(remaining)d remaining in stock.',
                     'Only %(remaining)d remaining in stock.',
-                    'remaining') % {'remaining': e.item.get_stock_quantity()})
+                    'remaining') % {'remaining': (
+                        self.initial_quantity + stock.quantity_available)})
         return quantity
 
     def save(self):
@@ -203,8 +179,9 @@ class ChangeQuantityForm(forms.ModelForm):
             # update stock allocation
             delta = quantity - self.initial_quantity
             Stock.objects.allocate_stock(stock, delta)
-        self.instance.change_quantity(quantity)
-        Order.objects.recalculate_order(self.instance.delivery_group.order)
+        change_order_line_quantity(self.instance, quantity)
+        recalculate_order(self.instance.delivery_group.order)
+        return self.instance
 
 
 class ShipGroupForm(forms.ModelForm):
@@ -213,14 +190,14 @@ class ShipGroupForm(forms.ModelForm):
         fields = ['tracking_number']
 
     def __init__(self, *args, **kwargs):
-        super(ShipGroupForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['tracking_number'].widget.attrs.update(
             {'placeholder': pgettext_lazy(
                 'Ship group form field placeholder',
                 'Parcel tracking number')})
 
     def clean(self):
-        if self.instance.status != OrderStatus.NEW:
+        if self.instance.status != GroupStatus.NEW:
             raise forms.ValidationError(
                 pgettext_lazy(
                     'Ship group form error',
@@ -228,22 +205,17 @@ class ShipGroupForm(forms.ModelForm):
                 code='invalid')
 
     def save(self):
-        order = self.instance.order
-        for line in self.instance.items.all():
-            stock = line.stock
-            if stock is not None:
-                # remove and deallocate quantity
-                Stock.objects.decrease_stock(stock, line.quantity)
-        self.instance.change_status(OrderStatus.SHIPPED)
-        statuses = [g.status for g in order.groups.all()]
-        if OrderStatus.SHIPPED in statuses and OrderStatus.NEW not in statuses:
-            order.change_status(OrderStatus.SHIPPED)
+        for line in self.instance.lines.all():
+            Stock.objects.decrease_stock(line.stock, line.quantity)
+        self.instance.status = GroupStatus.SHIPPED
+        self.instance.save()
+        return self.instance
 
 
 class CancelGroupForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.delivery_group = kwargs.pop('delivery_group')
-        super(CancelGroupForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def cancel_group(self):
         cancel_delivery_group(self.delivery_group)
@@ -253,10 +225,10 @@ class CancelOrderForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.order = kwargs.pop('order')
-        super(CancelOrderForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def clean(self):
-        data = super(CancelOrderForm, self).clean()
+        data = super().clean()
         if not self.order.can_cancel():
             raise forms.ValidationError(
                 pgettext_lazy(
@@ -272,10 +244,10 @@ class RemoveVoucherForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.order = kwargs.pop('order')
-        super(RemoveVoucherForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def clean(self):
-        data = super(RemoveVoucherForm, self).clean()
+        data = super().clean()
         if not self.order.voucher:
             raise forms.ValidationError(
                 pgettext_lazy(
@@ -289,12 +261,7 @@ class RemoveVoucherForm(forms.Form):
         voucher = self.order.voucher
         Voucher.objects.decrease_usage(voucher)
         self.order.voucher = None
-        Order.objects.recalculate_order(self.order)
-
-
-ORDER_STATUS_CHOICES = [
-    ('', pgettext_lazy('Order status field value', 'All'))
-] + OrderStatus.CHOICES
+        recalculate_order(self.order)
 
 
 PAYMENT_STATUS_CHOICES = [
@@ -302,9 +269,90 @@ PAYMENT_STATUS_CHOICES = [
 ] + PaymentStatus.CHOICES
 
 
-class OrderFilterForm(forms.Form):
-    status = forms.ChoiceField(choices=ORDER_STATUS_CHOICES)
-
-
 class PaymentFilterForm(forms.Form):
     status = forms.ChoiceField(choices=PAYMENT_STATUS_CHOICES)
+
+
+class StockChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.location.name
+
+
+class ChangeStockForm(forms.ModelForm):
+    stock = StockChoiceField(queryset=Stock.objects.none())
+
+    class Meta:
+        model = OrderLine
+        fields = ['stock']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        sku = self.instance.product_sku
+        self.fields['stock'].queryset = Stock.objects.filter(variant__sku=sku)
+        self.old_stock = self.instance.stock
+
+    def clean_stock(self):
+        stock = self.cleaned_data['stock']
+        if stock and stock.quantity_available < self.instance.quantity:
+            raise forms.ValidationError(
+                pgettext_lazy(
+                    'Change stock form error',
+                    'Only %(remaining)d remaining in this stock.') % {
+                        'remaining': stock.quantity_available})
+        return stock
+
+    def save(self, commit=True):
+        quantity = self.instance.quantity
+        if self.old_stock is not None:
+            Stock.objects.deallocate_stock(self.old_stock, quantity)
+        stock = self.instance.stock
+        if stock is not None:
+            self.instance.stock_location = (
+                stock.location.name if stock.location else '')
+            Stock.objects.allocate_stock(stock, quantity)
+        super().save(commit)
+        merge_duplicates_into_order_line(self.instance)
+        return self.instance
+
+
+class AddVariantToDeliveryGroupForm(forms.Form):
+    """ Adds variant in given quantity to shipment group. """
+    variant = AjaxSelect2ChoiceField(
+        queryset=ProductVariant.objects.filter(
+            product__in=Product.objects.get_available_products()),
+        fetch_data_url=reverse_lazy('dashboard:ajax-available-variants'))
+    quantity = QuantityField(
+        label=pgettext_lazy(
+            'Add variant to shipment group form label', 'Quantity'),
+        validators=[MinValueValidator(1)])
+
+    def __init__(self, *args, **kwargs):
+        self.group = kwargs.pop('group')
+        self.discounts = kwargs.pop('discounts')
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        """ Checks if given quantity is available in stocks. """
+        cleaned_data = super().clean()
+        variant = cleaned_data.get('variant')
+        quantity = cleaned_data.get('quantity')
+        if variant and quantity is not None:
+            try:
+                variant.check_quantity(quantity)
+            except InsufficientStock as e:
+                error = forms.ValidationError(
+                    pgettext_lazy(
+                        'Add item form error',
+                        'Could not add item. '
+                        'Only %(remaining)d remaining in stock.' %
+                        {'remaining': e.item.get_stock_quantity()}))
+                self.add_error('quantity', error)
+        return cleaned_data
+
+    def save(self):
+        """ Adds variant to target group. Updates stocks and order. """
+        variant = self.cleaned_data.get('variant')
+        quantity = self.cleaned_data.get('quantity')
+        add_variant_to_delivery_group(
+            self.group, variant, quantity, self.discounts)
+        recalculate_order(self.group.order)
