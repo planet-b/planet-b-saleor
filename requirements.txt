@@ -101,7 +101,7 @@ text-unidecode==1.0
 tinycss2==0.6.1           # via cssselect2, weasyprint
 typing==3.6.2             # via promise
 urllib3==1.21.1           # via elasticsearch, requests
-uwsgi==2.0.15
+# uwsgi==2.0.15
 vcrpy==1.10.3
 vine==1.1.4               # via amqp
 weasyprint==0.41
