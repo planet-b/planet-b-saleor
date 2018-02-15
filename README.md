@@ -43,11 +43,9 @@ We need to setup a separate environment for the project, so we can use either vi
 
 - Create a new environment for the project. `--name` can be anything, your choice!
 
-        ```sh
-        $ conda create --name py3 intelpython3_core python=3` (If you install Intel channel)
+        $ conda create --name py3 intelpython3_core python=3 (If you install Intel channel)
         $ conda create --name py3 python=3.5
-        $ conda create --name py2 python=2` (Not required for this project)
-        ```
+        $ conda create --name py2 python=2 (Not required for this project)
 
 - Using new environment when working within project:
 	- To activate: `$ activate py3`
