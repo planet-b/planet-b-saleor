@@ -43,7 +43,9 @@ We need to setup a separate environment for the project, so we can use either vi
 
 - Create a new environment for the project. `--name` can be anything, your choice!
 
-	`$ conda create --name py3 intelpython3_core python=3`
+        $ conda create --name py3 intelpython3_core python=3 (If you install Intel channel)
+        $ conda create --name py3 python=3.5
+        $ conda create --name py2 python=2 (Not required for this project)
 
 - Using new environment when working within project:
 	- To activate: `$ activate py3`
@@ -80,7 +82,7 @@ Download the portable zip file, extract and add the bin folder to your path
 
 - Prepare the database and populate data models:
 
-	`% python manage.py migrate`
+	`$ python manage.py migrate`
 
 - Install front-end dependencies:
 

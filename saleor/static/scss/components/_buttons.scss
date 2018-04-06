@@ -2,6 +2,15 @@ a.btn {
   display: inline-block;
 }
 .btn {
+  &.neutral {
+    border: 1px solid #092959;
+    color: #DBDD1A;
+    background-color: transparent;
+  }
+}
+
+
+.btn {
   transition: 0.3s;
   border-radius: $button-border-radius;
   text-transform: uppercase;
