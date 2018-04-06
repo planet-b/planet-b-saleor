@@ -1,6 +1,7 @@
 .cart {
   h3 {
     color: $skull-gray;
+    font-weight: bold !important
   }
   &__line {
     &.last {
