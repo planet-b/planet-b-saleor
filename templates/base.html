@@ -40,7 +40,7 @@
       <div class=" d-none d-md-block container">
       <div class="row">
         <div class="col-6">
-          <p class="text-left">{{ site.settings.header_text }}</p>
+          <p class="text-left">WEIRD P IMG goes here</p>
         </div>
         <div class="col-6">
           <ul class="float-right">
@@ -70,11 +70,19 @@
               {% endif %}
             {% else %}
               <li>
+                <a rel="nofollow" href="{% url "about" %}">
+                  {% trans "About" context "Main navigation item" %}</a>
+              </li>
+              <li>
+                <a rel="nofollow" href="{% url "brands" %}">
+                  {% trans "Brands" context "Main navigation item" %}</a>
+              </li>
+              <li>
                 <a rel="nofollow" href="{% url "account_signup" %}">
                   {% trans "Register" context "Main navigation item" %}</a>
               </li>
               <li>
-                <a rel="nofollow" href="{% url "account_login" %}">
+                <a class="btn neutral" rel="nofollow" href="{% url "account_login" %}">
                   {% trans "Log in" context "Main navigation item" %}
                 </a>
               </li>
@@ -84,6 +92,7 @@
       </div>
     </div>
     </div>
+    <!--Don't need the global search bar
     <div class="navbar__brand container-fluid d-block">
       <div class="container">
         <div class="row no-gutters">
@@ -139,7 +148,8 @@
           </div>
         </div>
       </div>
-    </div>
+    </div>-->
+    <!--Don't need the above categories
     <div class="navbar__menu container d-block">
       <nav class="navigation">
         {% url 'home' as home_url %}
@@ -153,7 +163,8 @@
           {% endfor %}
         </ul>
       </nav>
-    </div>
+    </div>-->
+    <div class="drive_innovation"></div>
   </header>
 {% endblock %}
 <div class="container maincontent">
@@ -176,20 +187,82 @@
       <div class="row">
         <div class="col-md-3">
           <a href="{% url 'home' %}" class="footer__logo">
-            <svg data-src="{% static "images/logo.svg" %}" height="38px" width="176px"/>
+            <svg class="footer-logo" data-src="{% static "images/placeholders/logo-white.svg" %}" />
           </a>
+          <div class="row">
+            <p>Based in Vancouver, BC</p>
+            <p>Canada</p>
+            <br/>
+            <p>604-000-0000</p>
+            <a href="mailto:hello@planet-b.co">hello@planet-b.co</a>
+          </div>
+          <div class="row">
+            <ul class="footer__social">
+              <li>
+                <svg class="footer-logo" data-src="{% static "images/placeholders/facebook.svg" %}" />
+              </li>
+              <li>
+                <svg class="footer-logo" data-src="{% static "images/placeholders/twitter.svg" %}" />
+              </li>
+              <li>
+                <svg class="footer-logo" data-src="{% static "images/placeholders/instagram.svg" %}" />
+              </li>
+            </ul>
+          </div>
         </div>
         <div class="col-md-3 col-sm-6">
-          <ul>
-            {% for category in categories %}
+          <div class="footer__section">
+            <h5 class="footer__section-title">Featured Initatives</h5>
+            <ul>
               <li>
-                <a href="{{ category.get_absolute_url }}">
-                  {{ category|capfirst }}
-                </a>
+                <a><div class="initative list-logo"></div>Initative Title</a>
               </li>
-            {% endfor %}
-          </ul>
+              <li>
+                <a><div class="initative list-logo"></div>Initative Title</a>
+              </li>
+              <li>
+                <a><div class="initative list-logo"></div>Initative Title</a>
+              </li>
+              <li>
+                <a><div class="initative list-logo"></div>Initative Title</a>
+              </li>
+              <!--{% for initative in initatives %}
+                <li>
+                  <a href="{{ initative.get_absolute_url }}">
+                    {{ initative|capfirst }}
+                  </a>
+                </li>
+              {% endfor %}-->
+            </ul>
+          </div>
         </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="footer__section">
+            <h5 class="footer__section-title">Featured Brands</h5>
+            <ul>
+              <li>
+                <a><div class="brand list-logo"></div>Brand Title</a>
+              </li>
+              <li>
+                <a><div class="brand list-logo"></div>Brand Title</a>
+              </li>
+              <li>
+                <a><div class="brand list-logo"></div>Brand Title</a>
+              </li>
+              <li>
+                <a><div class="brand list-logo"></div>Brand Title</a>
+              </li>
+              <!--{% for brand in brands %}
+                <li>
+                  <a href="{{ brand.get_absolute_url }}">
+                    {{ brand|capfirst }}
+                  </a>
+                </li>
+              {% endfor %}-->
+            </ul>
+          </div>
+        </div>
+        <!-- Your Cart / Register / Log in
         <div class="col-md-3 col-sm-6">
           <ul>
             <li>
@@ -240,32 +313,44 @@
               </li>
             {% endif %}
           </ul>
-        </div>
+        </div> -->
         <div class="col-md-3 col-sm-12">
-          <a target="_blank" rel="noopener" class="social-footer" href="https://www.facebook.com/mirumeelabs/">
-            <svg data-src="{% static "images/facebook_logo.svg" %}" width="45px" height="45px"/>
-          </a>
-          <a target="_blank" rel="noopener" class="social-footer" href="https://github.com/mirumee/saleor">
-            <svg data-src="{% static "images/github_logo.svg" %}" width="45px" height="45px"/>
-          </a>
-          <a target="_blank" rel="noopener" class="social-footer" href="https://twitter.com/getsaleor">
-            <svg data-src="{% static "images/twitter_logo.svg" %}" width="45px" height="45px"/>
-          </a>
-          <a target="_blank" rel="noopener" class="social-footer" href="https://plus.google.com/+Mirumee">
-            <svg data-src="{% static "images/google_logo.svg" %}" width="45px" height="45px"/>
-          </a>
-          <a target="_blank" rel="noopener" class="social-footer" href="https://www.meetup.com/Mirumee-Talks/">
-            <svg data-src="{% static "images/meetup_logo.svg" %}" width="45px" height="45px"/>
-          </a>
-          <a target="_blank" rel="noopener" class="social-footer" href="https://linkedin.com/company/mirumee-software">
-            <svg data-src="{% static "images/linkedin_logo.svg" %}" width="45px" height="45px"/>
-          </a>
-          <a target="_blank" rel="noopener" class="social-footer" href="https://dribbble.com/mirumee">
-            <svg data-src="{% static "images/dribbble_logo.svg" %}" width="45px" height="45px"/>
-          </a>
-          <a target="_blank" rel="noopener" class="social-footer" href="https://www.instagram.com/explore/tags/mirumee/">
-            <svg data-src="{% static "images/instagram_logo.svg" %}" width="45px" height="45px"/>
-          </a>
+          <div class="footer__section">
+            <h5 class="footer__section-title">Site Map</h5>
+            <ul>
+              <!-- {% for site in sites %}
+                <li>
+                  <a href="{{ site.get_absolute_url }}">
+                    {{ site|capfirst}}
+                  </a>
+                </li>
+              {% endfor %}-->
+              <li>
+                <a>Home</a>
+              </li>
+              <li>
+                <a>About</a>
+              </li>
+              <li>
+                <a>Brands</a>
+              </li>
+              <li>
+                <a>Initatives</a>
+              </li>
+              <li>
+                <a>Learn</a>
+              </li>
+              <li>
+                <a>News</a>
+              </li>
+              <li>
+                <a>Contact</a>
+              </li>
+              <li>
+                <a>Terms &amp; Privacy</a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

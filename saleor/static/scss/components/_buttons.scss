@@ -4,15 +4,18 @@ a.btn {
 .btn {
   &.neutral {
     border: 1px solid #092959;
-    color: #DBDD1A;
+    color: #092959;
+    /*color: #092959;*/
     background-color: transparent;
+  }
+  &.brand {
+    background-color: #092959;
+    color: #E6E617;
   }
 }
 
-
 .btn {
   transition: 0.3s;
-  border-radius: $button-border-radius;
   text-transform: uppercase;
   font-weight: 300;
   font-size: 1rem;
