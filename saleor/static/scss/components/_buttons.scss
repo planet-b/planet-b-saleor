@@ -3,14 +3,14 @@ a.btn {
 }
 .btn {
   &.neutral {
-    border: 1px solid #092959;
-    color: #092959;
-    /*color: #092959;*/
+    border: 1px solid $dark-blue;
+    color: $dark-blue;
     background-color: transparent;
   }
   &.brand {
-    background-color: #092959;
-    color: #E6E617;
+    background-color: $dark-blue;
+    border: 1px solid $dark-blue;
+    color: $yellow;
   }
 }
 

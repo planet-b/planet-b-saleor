@@ -1,0 +1,358 @@
+/* Because we have to overwrite native styles */
+.row {
+    margin-right: 0; 
+    margin-left: 0; 
+}
+
+/* Simple margins/padding for injecting into HTML */
+.m {
+	&-around {
+		&_none {
+			margin: $none;
+		}
+		&_x-small {
+			margin: $x-small;
+		}
+		&_small {
+			margin: $small;
+		}
+		&_medium {
+			margin: $medium;
+		}
+		&_large {
+			margin: $large;
+		}
+		&_x-large {
+			margin: $x-large;
+		}
+	}
+    &-horizonal {
+        &_none {
+            margin-left: $none;
+            margin-right: $none;
+        }
+        &_x-small {
+            margin-left: $x-small;
+            margin-right: $x-small;
+        }
+        &_small {
+            margin-left: $small;
+            margin-right: $small;
+        }
+        &_medium {
+            margin-left: $medium;
+            margin-right: $medium;
+        }
+        &_large {
+            margin-left: $large;
+            margin-right: $large;
+        }
+        &_x-large {
+            margin-left: $x-large;
+            margin-right: $x-large;
+        }
+    }
+    &-vertical {
+        &_none {
+            margin-top: $none;
+            margin-bottom: $none;
+        }
+        &_x-small {
+            margin-top: $x-small;
+            margin-bottom: $x-small;
+        }
+        &_small {
+            margin-top: $small;
+            margin-bottom: $small;
+        }
+        &_medium {
+            margin-top: $medium;
+            margin-bottom: $medium;
+        }
+        &_large {
+            margin-top: $large;
+            margin-bottom: $large;
+        }
+        &_x-large {
+            margin-top: $x-large;
+            margin-bottom: $x-large;
+        }
+    }
+	&-top {
+		&_none {
+			margin-top: $none;
+		}
+		&_x-small {
+			margin-top: $x-small;
+		}
+		&_small {
+			margin-top: $small;
+		}
+		&_medium {
+			margin-top: $medium;
+		}
+		&_large {
+			margin-top: $large;
+		}
+		&_x-large {
+			margin-top: $x-large;
+		}
+	}
+	&-bottom {
+		&_none {
+			margin-bottom: $none;
+		}
+		&_x-small {
+			margin-bottom: $x-small;
+		}
+		&_small {
+			margin-bottom: $small;
+		}
+		&_medium {
+			margin-bottom: $medium;
+		}
+		&_large {
+			margin-bottom: $large;
+		}
+		&_x-large {
+			margin-bottom: $x-large;
+		}
+	}
+	&-left {
+		&_none {
+			margin-left: $none;
+		}
+		&_x-small {
+			margin-left: $x-small;
+		}
+		&_small {
+			margin-left: $small;
+		}
+		&_medium {
+			margin-left: $medium;
+		}
+		&_large {
+			margin-left: $large;
+		}
+		&_x-large {
+			margin-left: $x-large;
+		}
+	}
+	&-right {
+		&_none {
+			margin-right: $none;
+		}
+		&_x-small {
+			margin-right: $x-small;
+		}
+		&_small {
+			margin-right: $small;
+		}
+		&_medium {
+			margin-right: $medium;
+		}
+		&_large {
+			margin-right: $large;
+		}
+		&_x-large {
+			margin-right: $x-large;
+		}
+	}
+}
+
+.p {
+	&-around {
+		&_none {
+			padding: $none;
+		}
+		&_x-small {
+			padding: $x-small;
+		}
+		&_small {
+			padding: $small;
+		}
+		&_medium {
+			padding: $medium;
+		}
+		&_large {
+			padding: $large;
+		}
+		&_x-large {
+			padding: $x-large;
+		}
+	}
+	&-top {
+		&_none {
+			padding-top: $none;
+		}
+		&_x-small {
+			padding-top: $x-small;
+		}
+		&_small {
+			padding-top: $small;
+		}
+		&_medium {
+			padding-top: $medium;
+		}
+		&_large {
+			padding-top: $large;
+		}
+		&_x-large {
+			padding-top: $x-large;
+		}
+	}
+	&-bottom {
+		&_none {
+			padding-bottom: $none;
+		}
+		&_x-small {
+			padding-bottom: $x-small;
+		}
+		&_small {
+			padding-bottom: $small;
+		}
+		&_medium {
+			padding-bottom: $medium;
+		}
+		&_large {
+			padding-bottom: $large;
+		}
+		&_x-large {
+			padding-bottom: $x-large;
+		}
+	}
+	&-left {
+		&_none {
+			padding-left: $none;
+		}
+		&_x-small {
+			padding-left: $x-small;
+		}
+		&_small {
+			padding-left: $small;
+		}
+		&_medium {
+			padding-left: $medium;
+		}
+		&_large {
+			padding-left: $large;
+		}
+		&_x-large {
+			padding-left: $x-large;
+		}
+	}
+	&-right {
+		&_none {
+			padding-right: $none;
+		}
+		&_x-small {
+			padding-right: $x-small;
+		}
+		&_small {
+			padding-right: $small;
+		}
+		&_medium {
+			padding-right: $medium;
+		}
+		&_large {
+			padding-right: $large;
+		}
+		&_x-large {
+			padding-right: $x-large;
+		}
+	}
+	&-horizonal {
+		&_none {
+			padding-left: $none;
+			padding-right: $none;
+		}
+		&_x-small {
+			padding-left: $x-small;
+			padding-right: $x-small;
+		}
+		&_small {
+			padding-left: $small;
+			padding-right: $small;
+		}
+		&_medium {
+			padding-left: $medium;
+			padding-right: $medium;
+		}
+		&_large {
+			padding-left: $large;
+			padding-right: $large;
+		}
+		&_x-large {
+			padding-left: $x-large;
+			padding-right: $x-large;
+		}
+	}
+	&-vertical {
+		&_none {
+			padding-top: $none;
+			padding-bottom: $none;
+		}
+		&_x-small {
+			padding-top: $x-small;
+			padding-bottom: $x-small;
+		}
+		&_small {
+			padding-top: $small;
+			padding-bottom: $small;
+		}
+		&_medium {
+			padding-top: $medium;
+			padding-bottom: $medium;
+		}
+		&_large {
+			padding-top: $large;
+			padding-bottom: $large;
+		}
+		&_x-large {
+			padding-top: $x-large;
+			padding-bottom: $x-large;
+		}
+	}
+}
+
+.grid {
+	&-between {
+		&_x-small {
+			padding-left: $x-small;
+			padding-right: x-small;
+		}
+		&_small {
+			padding-left: $small;
+			padding-right: $small;
+		}
+		&_medium {
+			padding-left: $medium;
+			padding-right: $medium;
+		}
+		&_large {
+			padding-left: $large;
+			padding-right: $large;
+		}
+		&_x-large {
+			padding-left: $x-large;
+			padding-right: $x-large;
+		}
+	}
+	&-around {
+		&_x-small {
+			padding: $x-small;
+		}
+		&_small {
+			padding: $small;
+		}
+		&_medium {
+			padding: $medium;
+		}
+		&_large {
+			padding: $large;
+		}
+		&_x-large {
+			padding: $x-large;
+		}
+	}
+}

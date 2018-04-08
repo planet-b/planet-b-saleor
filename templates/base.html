@@ -185,18 +185,23 @@
   <footer class="footer">
     <div class="container">
       <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-3 p-around_large">
           <a href="{% url 'home' %}" class="footer__logo">
             <svg class="footer-logo" data-src="{% static "images/placeholders/logo-white.svg" %}" />
           </a>
           <div class="row">
-            <p>Based in Vancouver, BC</p>
-            <p>Canada</p>
-            <br/>
-            <p>604-000-0000</p>
-            <a href="mailto:hello@planet-b.co">hello@planet-b.co</a>
+            <p class="m-around_none">Based in Vancouver, BC</p>
           </div>
           <div class="row">
+            <p class="m-around_none">Canada</p>
+          </div>
+          <div class="row p-top_large">
+            <p class="m-around_none">604-000-0000</p>
+          </div>
+          <div class="row">
+            <a href="mailto:hello@planet-b.co">hello@planet-b.co</a>
+          </div>
+          <div class="row p-top_large">
             <ul class="footer__social">
               <li>
                 <svg class="footer-logo" data-src="{% static "images/placeholders/facebook.svg" %}" />
@@ -210,7 +215,7 @@
             </ul>
           </div>
         </div>
-        <div class="col-md-3 col-sm-6">
+        <div class="col-md-3 col-sm-6 p-around_large">
           <div class="footer__section">
             <h5 class="footer__section-title">Featured Initatives</h5>
             <ul>
@@ -236,7 +241,7 @@
             </ul>
           </div>
         </div>
-        <div class="col-md-3 col-sm-6">
+        <div class="col-md-3 col-sm-6 p-around_large">
           <div class="footer__section">
             <h5 class="footer__section-title">Featured Brands</h5>
             <ul>
@@ -314,7 +319,7 @@
             {% endif %}
           </ul>
         </div> -->
-        <div class="col-md-3 col-sm-12">
+        <div class="col-md-3 col-sm-12 p-around_large">
           <div class="footer__section">
             <h5 class="footer__section-title">Site Map</h5>
             <ul>
