@@ -24,9 +24,7 @@
 {% block header_extra %}
   {% if perms.shipping.edit_shipping %}
   <div class="btn-fab-fixed">
-    <a href="{% url 'dashboard:shipping-method-add' %}"
-       class="btn-fab-default waves-effect waves-light"
-       title="{% trans "Add method" context "Shipping method list add button text" %}">
+    <a href="{% url 'dashboard:shipping-method-add' %}" class="btn-fab-default waves-effect waves-light" title="{% trans "Add method" context "Shipping method list add button text" %}">
       <svg data-src="{% static "dashboard/images/add.svg" %}" />
     </a>
   </div>
@@ -62,10 +60,10 @@
                     <td>
                       {% if not method.price_range %}
                         -
-                      {% elif method.price_range.min_price == method.price_range.max_price %}
-                        {% gross method.price_range.min_price html=True %}
+                      {% elif method.price_range.start == method.price_range.stop %}
+                        {{ method.price_range.start.gross|amount:'html' }}
                       {% else %}
-                        {% gross method.price_range.min_price html=True %}&ndash;{% gross method.price_range.max_price html=True %}
+                        {{ method.price_range.start.gross|amount:'html' }}&ndash;{{ method.price_range.stop.gross|amount:'html' }}
                       {% endif %}
                     </td>
                     <td>

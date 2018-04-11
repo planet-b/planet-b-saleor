@@ -7,12 +7,12 @@ from django.contrib import messages
 from django.db import transaction
 from django.utils.timezone import now
 from django.utils.translation import pgettext_lazy
-from prices import PriceRange
-from satchless.item import InsufficientStock
+from prices import TaxedMoneyRange
 
 from . import CartStatus
-from .models import Cart
+from ..core.exceptions import InsufficientStock
 from ..core.utils import to_local_currency
+from .models import Cart
 
 COOKIE_NAME = 'cart'
 
@@ -77,11 +77,8 @@ def get_category_variants_and_prices(cart, root_category):
     products = {cart_line.variant.product for cart_line in cart.lines.all()}
     matching_products = set()
     for product in products:
-        for category in product.categories.all():
-            is_descendant = category.is_descendant_of(
-                root_category, include_self=True)
-            if is_descendant:
-                matching_products.add(product)
+        if product.category.is_descendant_of(root_category, include_self=True):
+            matching_products.add(product)
     for product in matching_products:
         for line in get_product_variants_and_prices(cart, product):
             yield line
@@ -223,7 +220,8 @@ def get_cart_data(cart, shipping_range, currency, discounts):
         cart_total = cart.get_total(discounts=discounts)
         local_cart_total = to_local_currency(cart_total, currency)
         shipping_required = cart.is_shipping_required()
-        total_with_shipping = PriceRange(cart_total)
+        total_with_shipping = TaxedMoneyRange(
+            start=cart_total, stop=cart_total)
         if shipping_required and shipping_range:
             total_with_shipping = shipping_range + cart_total
         local_total_with_shipping = to_local_currency(
