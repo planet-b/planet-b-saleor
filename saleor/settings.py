@@ -154,7 +154,6 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.postgres',
     'django.forms',
-    'corsheaders',
 
     # Local apps
     'saleor.account',
@@ -188,7 +187,8 @@ INSTALLED_APPS = [
     'django_filters',
     'django_celery_results',
     'impersonate',
-    'phonenumber_field']
+    'phonenumber_field',
+    'corsheaders',]
 
 LOGGING = {
     'version': 1,
