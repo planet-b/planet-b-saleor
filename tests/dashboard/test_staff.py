@@ -9,7 +9,6 @@ from templated_email import send_templated_mail
 from saleor.account.models import User
 from saleor.dashboard.staff.forms import StaffForm
 from saleor.settings import DEFAULT_FROM_EMAIL
-from saleor.userprofile.models import User
 
 
 def test_staff_form_not_valid(db):
