@@ -38,5 +38,3 @@ after_success:
   - codecov
 services:
   - postgresql
-notifications:
-  slack: planet-b:heOf9ZoRjT2F0IrHHCCCzIzH
