@@ -1,6 +1,7 @@
 import uuid
 
 import google_measurement_protocol as ga
+from celery import shared_task
 from django.conf import settings
 
 FINGERPRINT_PARTS = [
@@ -19,10 +20,17 @@ def get_client_id(request):
     return uuid.uuid5(UUID_NAMESPACE, name)
 
 
+@shared_task
+def ga_report(tracking_id, client_id, what, extra_info=None,
+              extra_headers=None):
+    ga.report(tracking_id, client_id, what, extra_info=extra_info,
+              extra_headers=extra_headers)
+
+
 def _report(client_id, what, extra_info=None, extra_headers=None):
     tracking_id = getattr(settings, 'GOOGLE_ANALYTICS_TRACKING_ID', None)
     if tracking_id and client_id:
-        ga.report(tracking_id, client_id, what, extra_info=extra_info,
+        ga_report(tracking_id, client_id, what, extra_info=extra_info,
                   extra_headers=extra_headers)
 
 
@@ -40,12 +48,12 @@ def report_view(client_id, path, language, headers):
 
 def report_order(client_id, order):
     for group in order:
-        items = [ga.Item(oi.product_name,
-                         oi.get_price_per_item(),
-                         quantity=oi.quantity,
-                         item_id=oi.product_sku)
-                 for oi in group]
-        trans = ga.Transaction('%s-%s' % (order.id, group.id), items,
-                               revenue=group.get_total(),
-                               shipping=group.order.shipping_price)
+        items = [
+            ga.Item(
+                ol.product_name, ol.get_price_per_item(), quantity=ol.quantity,
+                item_id=ol.product_sku)
+            for ol in group]
+        trans = ga.Transaction(
+            '%s-%s' % (order.id, group.id), items, revenue=group.get_total(),
+            shipping=group.order.shipping_price)
         _report(client_id, trans, {})
