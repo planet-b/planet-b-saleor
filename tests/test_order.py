@@ -1,51 +1,37 @@
-from prices import Price
+from decimal import Decimal
+from unittest.mock import Mock, patch
 
-from saleor.cart.models import Cart
-from saleor.order import models, OrderStatus
-from saleor.order.utils import (
-    add_variant_to_delivery_group, fill_group_with_partition)
+from django.urls import reverse
+from prices import Money, TaxedMoney
+from tests.utils import get_redirect_location
 
-
-def test_total_property():
-    order = models.Order(total_net=20, total_tax=5)
-    assert order.total.gross == 25
-    assert order.total.tax == 5
-    assert order.total.net == 20
-
-
-def test_total_property_empty_value():
-    order = models.Order(total_net=None, total_tax=None)
-    assert order.total is None
+from saleor.order import OrderStatus, models
+from saleor.order.emails import collect_data_for_email
+from saleor.order.forms import OrderNoteForm
+from saleor.order.utils import add_variant_to_delivery_group, recalculate_order
 
 
 def test_total_setter():
-    price = Price(net=10, gross=20, currency='USD')
+    price = TaxedMoney(
+        net=Money(10, currency='USD'), gross=Money(15, currency='USD'))
     order = models.Order()
     order.total = price
-    assert order.total_net.net == 10
-    assert order.total_tax.net == 10
+    assert order.total_net == Money(10, currency='USD')
+    assert order.total.net == Money(10, currency='USD')
+    assert order.total_gross == Money(15, currency='USD')
+    assert order.total.gross == Money(15, currency='USD')
+    assert order.total.tax == Money(5, currency='USD')
 
 
-def test_stock_allocation(billing_address, product_in_stock):
-    variant = product_in_stock.variants.get()
-    cart = Cart()
-    cart.save()
-    cart.add(variant, quantity=2)
-    order = models.Order.objects.create(billing_address=billing_address)
-    delivery_group = models.DeliveryGroup.objects.create(order=order)
-    fill_group_with_partition(delivery_group, cart.lines.all())
-    order_line = delivery_group.lines.get()
-    stock = order_line.stock
-    assert stock.quantity_allocated == 2
+def test_order_get_subtotal(order_with_lines):
+    order_with_lines.discount_name = "Test discount"
+    order_with_lines.discount_amount = (
+        order_with_lines.total.gross * Decimal('0.5'))
+    recalculate_order(order_with_lines)
 
-
-def test_order_discount(sale, order, request_cart_with_item):
-    cart = request_cart_with_item
-    group = models.DeliveryGroup.objects.create(order=order)
-    fill_group_with_partition(
-        group, cart.lines.all(), discounts=cart.discounts)
-    line = group.lines.first()
-    assert line.get_price_per_item() == Price(currency="USD", net=5)
+    target_subtotal = order_with_lines.total - order_with_lines.shipping_price
+    target_subtotal += order_with_lines.discount_amount
+    assert order_with_lines.get_subtotal() == target_subtotal
 
 
 def test_add_variant_to_delivery_group_adds_line_for_new_variant(
@@ -115,13 +101,94 @@ def test_order_status_closed(closed_orders):
     assert all([order.status == OrderStatus.CLOSED for order in closed_orders])
 
 
-def test_order_queryset_open_orders(open_orders, closed_orders):
+def test_order_queryset_open_orders(open_orders):
     qs = models.Order.objects.open()
     assert qs.count() == len(open_orders)
     assert all([item in qs for item in open_orders])
 
 
-def test_order_queryset_closed_orders(open_orders, closed_orders):
+def test_order_queryset_closed_orders(closed_orders):
     qs = models.Order.objects.closed()
     assert qs.count() == len(closed_orders)
     assert all([item in qs for item in closed_orders])
+
+
+def test_view_connect_order_with_user_authorized_user(
+        order, authorized_client, customer_user):
+    order.user_email = customer_user.email
+    order.save()
+
+    url = reverse(
+        'order:connect-order-with-user', kwargs={'token': order.token})
+    response = authorized_client.post(url)
+
+    redirect_location = get_redirect_location(response)
+    assert redirect_location == reverse('order:details', args=[order.token])
+    order.refresh_from_db()
+    assert order.user == customer_user
+
+
+def test_view_connect_order_with_user_different_email(
+        order, authorized_client):
+    url = reverse(
+        'order:connect-order-with-user', kwargs={'token': order.token})
+    response = authorized_client.post(url)
+
+    redirect_location = get_redirect_location(response)
+    assert redirect_location == reverse('account:details')
+    order.refresh_from_db()
+    assert order.user is None
+
+
+def test_add_note_to_order(order_with_lines_and_stock):
+    order = order_with_lines_and_stock
+    assert order.is_open
+    note = models.OrderNote(order=order, user=order.user)
+    note_form = OrderNoteForm({'content': 'test_note'}, instance=note)
+    note_form.is_valid()
+    note_form.save()
+    assert order.notes.first().content == 'test_note'
+
+
+def test_create_order_history(order_with_lines):
+    order = order_with_lines
+    order.history.create(content='test_entry', user=order.user)
+    history_entry = models.OrderHistoryEntry.objects.get(order=order)
+    assert history_entry == order.history.first()
+    assert history_entry.content == 'test_entry'
+
+
+def test_delivery_group_is_shipping_required(delivery_group):
+    assert delivery_group.is_shipping_required()
+
+
+def test_delivery_group_is_shipping_required_no_shipping(delivery_group):
+    line = delivery_group.lines.first()
+    line.is_shipping_required = False
+    line.save()
+    assert not delivery_group.is_shipping_required()
+
+
+def test_delivery_group_is_shipping_required_partially_required(
+        delivery_group, product_without_shipping):
+    variant = product_without_shipping.variants.get()
+    product_type = product_without_shipping.product_type
+    delivery_group.lines.create(
+        delivery_group=delivery_group,
+        product=product_without_shipping,
+        product_name=product_without_shipping.name,
+        product_sku=variant.sku,
+        is_shipping_required=product_type.is_shipping_required,
+        quantity=3,
+        unit_price_net=Decimal('30.00'),
+        unit_price_gross=Decimal('30.00'))
+    assert delivery_group.is_shipping_required()
+
+
+def test_collect_data_for_email(order):
+    template = Mock(spec=str)
+    order.user_mail = 'test@example.com'
+    email_data = collect_data_for_email(order.pk, template)
+    order_url = reverse('order:details', kwargs={'token': order.token})
+    assert order_url in email_data['url']
+    assert email_data['email'] == order.user_email

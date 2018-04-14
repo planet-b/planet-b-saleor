@@ -4,18 +4,23 @@ from django.conf import settings
 from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation import pgettext_lazy
-from prices import Price
-from satchless.item import InsufficientStock
+from prices import Money, TaxedMoney, fixed_discount
 
-from ..product.models import Stock
-from ..userprofile.utils import store_user_address
-from .models import Order, OrderLine
 from . import GroupStatus
+from ..account.utils import store_user_address
+from ..core.exceptions import InsufficientStock
+from ..core.utils import ZERO_TAXED_MONEY
+from ..product.utils import allocate_stock
 
 
 def check_order_status(func):
-    """Preserves execution of function if order is fully paid by redirecting
-    to order's details page."""
+    """Prevent execution of decorated function if order is fully paid.
+
+    Instead redirects to order details page.
+    """
+    # pylint: disable=cyclic-import
+    from .models import Order
+
     @wraps(func)
     def decorator(*args, **kwargs):
         token = kwargs.pop('token')
@@ -29,22 +34,24 @@ def check_order_status(func):
 
 
 def cancel_order(order):
-    """Cancells order by cancelling all associated shipment groups."""
+    """Cancel order by cancelling all associated shipment groups."""
     for group in order.groups.all():
-        cancel_delivery_group(group)
+        group.cancel()
+        group.save()
 
 
 def recalculate_order(order):
-    """Recalculates and assigns total price of order.
-    Total price is a sum of items and shippings in order shipment groups."""
+    """Recalculate and assign total price of order.
+
+    Total price is a sum of items in shipment groups and order shipping price
+    minus discount amount.
+    """
     prices = [
         group.get_total() for group in order
         if group.status != GroupStatus.CANCELLED]
-    total_net = sum(p.net for p in prices)
-    total_gross = sum(p.gross for p in prices)
-    total = Price(
-        net=total_net, gross=total_gross, currency=settings.DEFAULT_CURRENCY)
-    total += order.shipping_price
+    total = sum(prices, order.shipping_price)
+    if order.discount_amount:
+        total -= order.discount_amount
     order.total = total
     order.save()
 
@@ -58,17 +65,10 @@ def attach_order_to_user(order, user):
     order.save(update_fields=['user'])
 
 
-def fill_group_with_partition(group, partition, discounts=None):
-    """Fills shipment group with order lines created from partition items."""
-    for item in partition:
-        add_variant_to_delivery_group(
-            group, item.variant, item.get_quantity(), discounts,
-            add_to_existing=False)
-
-
 def add_variant_to_delivery_group(
         group, variant, total_quantity, discounts=None, add_to_existing=True):
-    """Adds total_quantity of variant to group.
+    """Add total_quantity of variant to group.
+
     Raises InsufficientStock exception if quantity could not be fulfilled.
 
     By default, first adds variant to existing lines with same variant.
@@ -78,9 +78,8 @@ def add_variant_to_delivery_group(
     as long as total_quantity of variant will be added.
     """
     quantity_left = (
-        add_variant_to_existing_lines(
-            group, variant, total_quantity) if add_to_existing
-        else total_quantity)
+        add_variant_to_existing_lines(group, variant, total_quantity)
+        if add_to_existing else total_quantity)
     price = variant.get_price_per_item(discounts)
     while quantity_left > 0:
         stock = variant.select_stockrecord()
@@ -95,19 +94,20 @@ def add_variant_to_delivery_group(
             product=variant.product,
             product_name=variant.display_product(),
             product_sku=variant.sku,
+            is_shipping_required=(
+                variant.product.product_type.is_shipping_required),
             quantity=quantity,
-            unit_price_net=price.net,
-            unit_price_gross=price.gross,
+            unit_price=price,
             stock=stock,
             stock_location=stock.location.name)
-        Stock.objects.allocate_stock(stock, quantity)
+        allocate_stock(stock, quantity)
         # refresh stock for accessing quantity_allocated
         stock.refresh_from_db()
         quantity_left -= quantity
 
 
 def add_variant_to_existing_lines(group, variant, total_quantity):
-    """Adds variant to existing lines with same variant.
+    """Add variant to existing lines with same variant.
 
     Variant is added by increasing quantity of lines with same variant,
     as long as total_quantity of variant will be added
@@ -129,28 +129,22 @@ def add_variant_to_existing_lines(group, variant, total_quantity):
             else quantity_left)
         line.quantity += quantity
         line.save()
-        Stock.objects.allocate_stock(line.stock, quantity)
+        allocate_stock(line.stock, quantity)
         quantity_left -= quantity
         if quantity_left == 0:
             break
     return quantity_left
 
 
-def cancel_delivery_group(group):
-    """Cancells shipment group and (optionally) it's order if necessary."""
-    for line in group:
-        Stock.objects.deallocate_stock(line.stock, line.quantity)
-    group.status = GroupStatus.CANCELLED
-    group.save()
-
-
 def merge_duplicates_into_order_line(line):
-    """Merges duplicated lines in shipment group into one (given) line.
+    """Merge duplicated lines in shipment group into one (given) line.
+
     If there are no duplicates, nothing will happen.
     """
     lines = line.delivery_group.lines.filter(
         product=line.product, product_name=line.product_name,
-        product_sku=line.product_sku, stock=line.stock)
+        product_sku=line.product_sku, stock=line.stock,
+        is_shipping_required=line.is_shipping_required)
     if lines.count() > 1:
         line.quantity = sum([line.quantity for line in lines])
         line.save()
@@ -166,16 +160,18 @@ def change_order_line_quantity(line, new_quantity):
         line.delivery_group.delete()
         order = line.delivery_group.order
         if not order.get_lines():
-            order.create_history_entry(
-                status=order.status, comment=pgettext_lazy(
+            order.history.create(
+                content=pgettext_lazy(
                     'Order status history entry',
                     'Order cancelled. No items in order'))
 
 
 def remove_empty_groups(line, force=False):
-    """Removes order line and associated shipment group and order.
+    """Remove order line and associated shipment group and order.
+
     Remove is done only if quantity of order line or items in group or in order
-    is equal to 0."""
+    is equal to 0.
+    """
     source_group = line.delivery_group
     order = source_group.order
     if line.quantity:
@@ -185,22 +181,25 @@ def remove_empty_groups(line, force=False):
     if not source_group.get_total_quantity() or force:
         source_group.delete()
     if not order.get_lines():
-        order.create_history_entry(
-            status=order.status, comment=pgettext_lazy(
+        order.history.create(
+            content=pgettext_lazy(
                 'Order status history entry',
                 'Order cancelled. No items in order'))
 
 
 def move_order_line_to_group(line, target_group, quantity):
-    """Moves given quantity of order line to another shipment group."""
+    from .models import OrderLine
+    """Split given quantity of order line to another shipment group."""
     try:
         target_line = target_group.lines.get(
             product=line.product, product_name=line.product_name,
-            product_sku=line.product_sku, stock=line.stock)
+            product_sku=line.product_sku, stock=line.stock,
+            is_shipping_required=line.is_shipping_required)
     except OrderLine.DoesNotExist:
         target_group.lines.create(
             delivery_group=target_group, product=line.product,
             product_name=line.product_name, product_sku=line.product_sku,
+            is_shipping_required=line.is_shipping_required,
             quantity=quantity, unit_price_net=line.unit_price_net,
             stock=line.stock,
             stock_location=line.stock_location,
