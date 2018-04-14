@@ -12,7 +12,7 @@ from .validators import (
     validate_shipping_method, validate_is_shipping_required)
 from ..core import load_checkout
 from ..forms import ShippingMethodForm
-from ...registration.forms import LoginForm
+from ...account.forms import LoginForm
 
 
 @load_checkout
@@ -67,10 +67,9 @@ def summary_view(request, checkout):
         view = validate_shipping_address(summary_with_shipping_view)
         view = validate_shipping_method(view)
         return view(request, checkout)
-    elif request.user.is_authenticated:
+    if request.user.is_authenticated:
         return summary_without_shipping(request, checkout)
-    else:
-        return anonymous_summary_without_shipping(request, checkout)
+    return anonymous_summary_without_shipping(request, checkout)
 
 
 @load_checkout

@@ -2,10 +2,11 @@
 {% load babel %}
 {% load prices_i18n %}
 {% load i18n %}
+{% load i18n_address_tags %}
 {% load materializecss %}
 {% load status %}
 {% load staticfiles %}
-{% load discount_amount_for from prices %}
+{% load voucher %}
 
 {% block title %}
   {{ order }} - {% trans "Orders" context "Dashboard orders list" %} - {{ block.super }}
@@ -17,12 +18,12 @@
 
 {% block header_menu %}
   {% url "dashboard:orders" as url %}
-  {% include "dashboard/includes/_back-link.html" with url=url %}
+  {% include "dashboard/includes/_back_link.html" with url=url %}
 {% endblock %}
 
 {% block header_extra %}
   <a class="dropdown-button right" href="#" data-activates="context-menu" data-constrainwidth="false">
-    <svg data-src="{% static "dashboard/images/more_vert.svg" %}" height="24" width="24" />
+    <svg data-src="{% static "dashboard/images/more-vert.svg" %}" height="24" width="24" />
   </a>
   <ul id="context-menu" class="dropdown-content">
     {% if perms.order.edit_order %}
@@ -51,7 +52,7 @@
     </li>
     <li class="back-mobile">
       <a href="{% url "dashboard:orders" %}">
-        <svg data-src="{% static "dashboard/images/arrow_left.svg" %}" fill="#fff" width="20px" height="20px" />
+        <svg data-src="{% static "dashboard/images/arrow-left.svg" %}" fill="#fff" width="20px" height="20px" />
       </a>
     </li>
     <li>
@@ -71,7 +72,7 @@
             <span>
               {% trans "Details" context "Order detail tab" %}
             </span>
-            <svg data-src="{% static "dashboard/images/description.svg" %}" class="fill-secondary"/>
+            <svg data-src="{% static "dashboard/images/description.svg" %}" class="fill-secondary" />
           </a>
         </li>
         <li role="presentation" class="tab col s4">
@@ -98,9 +99,19 @@
       <div class="card">
         <div class="card-content">
           <span class="card-title">
-            {% trans "Order summary" context "Order summary title" %}
+            {% blocktrans trimmed with order_id=order.id context "Order summary title" %}
+              Order #{{ order_id }}
+            {% endblocktrans %}
           </span>
           <div class="row">
+              <div class="col s12 m4 l12">
+                <h6>
+                  {% trans "Placed on" context "Order placed on date" %}
+                </h6>
+                <p>
+                  {{ order.created }}
+                </p>
+              </div>
             <div class="col s12 m4 l12">
               <h6>
                 {% trans "Customer" context "Dashboard customer" %}
@@ -108,6 +119,8 @@
               <p>
                 {% if order.user %}
                   <a href="{% url "dashboard:customer-details" pk=order.user.pk %}">{{ order.user }}</a>
+                {% elif order.user_email %}
+                  {{ order.user_email }}
                 {% else %}
                   {% trans "Guest" context "Anonymous user account value" %}
                 {% endif %}
@@ -146,7 +159,7 @@
                 </td>
                 <td class="right-align">
                   <strong>
-                    {% gross balance html=True %}
+                    {{ balance.gross|amount:'html' }}
                   </strong>
                 </td>
               </tr>
@@ -154,19 +167,11 @@
             <tbody>
               <tr>
                 <td>
-                  {% trans "Order total" context "Order summary card header" %}
-                </td>
-                <td class="right-align">
-                  {% gross order.get_total html=True %}
-                </td>
-              </tr>
-              <tr>
-                <td>
                   {% trans "Preauthorized amount" context "Order summary card header" %}
                 </td>
                 <td class="right-align">
-                  {% if preauthorized %}
-                    {% gross preauthorized html=True %}
+                  {% if preauthorized.gross %}
+                    {{ preauthorized.gross|amount:'html' }}
                   {% else %}
                     {% trans "N/A" context "Preauthorized amount not available" %}
                   {% endif %}
@@ -177,7 +182,7 @@
                   {% trans "Captured amount" context "Order summary card header" %}
                 </td>
                 <td class="right-align">
-                  {% gross captured html=True %}
+                  {{ captured.gross|amount:'html' }}
                 </td>
               </tr>
             </tbody>
@@ -187,70 +192,67 @@
           {% if can_capture or can_refund or can_release %}
             <div class="data-table-action">
               {% if can_capture %}
-                <a href="#base-modal" data-href="{% url 'dashboard:capture-payment' order_pk=order.pk payment_pk=payment.pk %}"
-              class="btn-flat modal-trigger-custom waves-effect">
+                <a href="#base-modal" data-href="{% url 'dashboard:capture-payment' order_pk=order.pk payment_pk=payment.pk %}" class="btn-flat modal-trigger-custom waves-effect">
                   {% trans "Capture" context "Order summary card action" %}
                 </a>
               {% elif can_refund %}
-                <a href="#base-modal" data-href="{% url 'dashboard:refund-payment' order_pk=order.pk payment_pk=payment.pk %}"
-              class="btn-flat modal-trigger-custom waves-effect">
+                <a href="#base-modal" data-href="{% url 'dashboard:refund-payment' order_pk=order.pk payment_pk=payment.pk %}" class="btn-flat modal-trigger-custom waves-effect">
                   {% trans "Refund" context "Order summary card action" %}
                 </a>
               {% endif %}
               {% if can_release %}
-                <a href="#base-modal" data-href="{% url 'dashboard:release-payment' order_pk=order.pk payment_pk=payment.pk %}"
-              class="btn-flat modal-trigger-custom waves-effect">
+                <a href="#base-modal" data-href="{% url 'dashboard:release-payment' order_pk=order.pk payment_pk=payment.pk %}" class="btn-flat modal-trigger-custom waves-effect">
                   {% trans "Release" context "Order summary card action" %}
                 </a>
               {% endif %}
               <a href="{% url 'dashboard:order-invoice' order_pk=order.pk %}" data-href="" class="btn-flat waves-effect" target="_blank">
-                  {% trans "Invoice" context "Order detail action" %}
+                {% trans "Invoice" context "Order detail action" %}
               </a>
             </div>
           {% endif %}
         {% endif %}
       </div>
-      {% with order.shipping_address as address %}
-        <div class="row">
-          {% if address %}
-            <div class="col s12 m6 l12 p6">
-              <div class="card">
-                <div class="card-content">
-                  <span class="card-title black-text">
-                    {% trans "Shipping address" context "" %}
-                  </span>
-                  {% include 'dashboard/includes/_address.html' with address=address only %}
-                </div>
-                {% if perms.order.edit_order %}
-                  <div class="card-action">
-                    <a class="btn-flat waves-effect" href="{% url "dashboard:address-edit" order_pk=order.pk address_type="shipping" %}">
-                      {% trans "Edit" context "Dashboard edit action" %}
-                    </a>
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-          {% endif %}
-          <div class="col s12 {% if address %}m6{% else %}m12{% endif %} l12 p6">
+      <div class="row">
+        {% if order.is_shipping_required %}
+          <div class="col s12 m6 l12 p6">
             <div class="card">
               <div class="card-content">
-                {% with order.billing_address as address %}
-                  <span class="card-title black-text">
-                    {% trans "Billing address" context "" %}
-                  </span>
-                  {% include 'dashboard/includes/_address.html' with address=address only %}
-                {% endwith %}
+                <span class="card-title black-text">
+                  {% trans "Shipping address" context "" %}
+                </span>
+                {% if order.shipping_address %}
+                  {% format_address order.shipping_address %}
+                {% else %}
+                  {% trans "No shipping address" context "Missing shipping address message" %}
+                {% endif %}
               </div>
               {% if perms.order.edit_order %}
                 <div class="card-action">
-                  <a href="{% url "dashboard:address-edit" order_pk=order.pk address_type="billing" %}" class="btn-flat waves-effect">
-                    {% trans "Edit" context "Dashboard edit action" %}</a>
+                  <a href="{% url "dashboard:address-edit" order_pk=order.pk address_type="shipping" %}" class="btn-flat waves-effect">
+                    {% trans "Edit" context "Dashboard edit action" %}
+                  </a>
                 </div>
               {% endif %}
             </div>
           </div>
+        {% endif %}
+        <div class="col s12 {% if order.shipping_address %}m6{% else %}m12{% endif %} l12 p6">
+          <div class="card">
+            <div class="card-content">
+              <span class="card-title black-text">
+                  {% trans "Billing address" context "" %}
+              </span>
+              {% format_address order.billing_address %}
+            </div>
+            {% if perms.order.edit_order %}
+              <div class="card-action">
+                <a href="{% url "dashboard:address-edit" order_pk=order.pk address_type="billing" %}" class="btn-flat waves-effect">
+                  {% trans "Edit" context "Dashboard edit action" %}</a>
+              </div>
+            {% endif %}
+          </div>
         </div>
-      {% endwith %}
+      </div>
     </div>
     <div class="col s12 l8 switch-two-columns">
       {% for group in groups %}
@@ -270,9 +272,6 @@
                   <th class="wide">
                     {% trans "Item" context "Shipment group table header" %}
                   </th>
-                  <th>
-                    {% trans "SKU" context "Shipment group table header" %}
-                  </th>
                   <th class="right-align">
                     {% trans "Price" context "Shipment group table header" %}
                   </th>
@@ -288,19 +287,26 @@
                 {% for line in group.lines.all %}
                   <tr class="last-no-border">
                     <td>
-                      {{ line.product_name }}<br>
-                    </td>
-                    <td>
-                      {{ line.product_sku }}
+                      {% if line.product %}
+                        <a href="{% url 'dashboard:product-detail' pk=line.product.pk %}">{{ line.product_name }}</a>
+                      {% else %}
+                        {{ line.product_name }}
+                      {% endif %}
+                      <br>
+                      <span class="grey-text">
+                        {% blocktrans trimmed with sku=line.product_sku context "Shipment group table text" %}
+                          SKU: {{ sku }}
+                        {% endblocktrans %}
+                      </span>
                     </td>
                     <td class="right-align">
-                      {% gross line.get_price_per_item html=True %}
+                      {{ line.unit_price.gross|amount:'html' }}
                     </td>
                     <td class="right-align">
                       {% if group.can_edit_lines %}
                         <a class="dropdown-button" href="#" data-activates="line-actions-{{ line.pk }}" data-constrainwidth="false">
-                          {{ line.quantity }} {% if line.stock_location %} ({{ line.stock_location|truncatechars:10 }}) {% endif %}
-                          <svg data-src="{% static "dashboard/images/arrow_drop_down.svg" %}" width="24" height="24" />
+                          {{ line.quantity }} {% if line.stock_location and is_many_stock_locations %} ({{ line.stock_location|truncatechars:10 }}) {% endif %}
+                          <svg data-src="{% static "dashboard/images/arrow-drop-down.svg" %}" width="24" height="24" />
                         </a>
                         <ul id="line-actions-{{ line.pk }}" class="dropdown-content">
                           <li>
@@ -308,11 +314,13 @@
                               {% trans "Change quantity" context "Shipment group table row action" %}
                             </a>
                           </li>
-                          <li>
-                            <a href="#base-modal" data-href="{% url 'dashboard:orderline-change-stock' order_pk=order.pk line_pk=line.pk %}" class="modal-trigger-custom" title="{% trans "Change stock location" context "Shipment group table row action" %}">
-                              {% trans "Change stock" context "Shipment group table row action" %}
-                            </a>
-                          </li>
+                          {% if is_many_stock_locations %}
+                            <li>
+                              <a href="#base-modal" data-href="{% url 'dashboard:orderline-change-stock' order_pk=order.pk line_pk=line.pk %}" class="modal-trigger-custom" title="{% trans "Change stock location" context "Shipment group table row action" %}">
+                                {% trans "Change stock" context "Shipment group table row action" %}
+                              </a>
+                            </li>
+                          {% endif %}
                           <li>
                             <a href="#base-modal" data-href="{% url 'dashboard:orderline-split' order_pk=order.pk line_pk=line.pk %}" class="modal-trigger-custom" title="{% trans "Split line" context "Shipment group table row action" %}">
                               {% trans "Split order line" context "Shipment group table row action" %}
@@ -329,7 +337,7 @@
                       {% endif %}
                     </td>
                     <td class="right-align">
-                      {% gross line.get_total html=True %}
+                      {{ line.get_total.gross|amount:'html' }}
                     </td>
                   </tr>
                 {% endfor %}
@@ -349,30 +357,23 @@
                     {% trans "Cancel shipment" context "Shipment group table action" %}
                   </a>
                 {% endif %}
-                <a href="#base-modal" data-href="{% url 'dashboard:add-variant-to-group' order_pk=order.pk group_pk=group.pk %}" class="btn-flat waves-effect modal-trigger-custom" title="{% trans "Add product to order" context "Order summary card action title" %}">
-                  {% trans "Add product" context "Order summary card action" %}
-                </a>
+                {% if group.can_edit_lines %}
+                  <a href="#base-modal" data-href="{% url 'dashboard:add-variant-to-group' order_pk=order.pk group_pk=group.pk %}" class="btn-flat waves-effect modal-trigger-custom" title="{% trans "Add product to order" context "Order summary card action title" %}">
+                    {% trans "Add product" context "Order summary card action" %}
+                  </a>
+                {% endif %}
                 <a href="{% url 'dashboard:order-packing-slips' group_pk=group.pk %}" data-href="" class="btn-flat waves-effect" target="_blank">
                   {% trans "Packing Slips" context "Order detail action" %}
                 </a>
               </div>
-            {% else %}
-              {% if group.tracking_number %}
-                <div class="card-action">
-                  {% blocktrans trimmed with tracking=group.tracking_number context "Shipment group table text" %}
-                    Tracking number: {{ tracking }}
-                  {% endblocktrans %}
-                </div>
-              {% else %}
-                {% if group.tracking_number %}
-                  <div class="card-action">
-                    {% blocktrans trimmed with tracking=group.tracking_number context "Shipment group table text" %}
-                      Tracking number: {{ tracking }}
-                    {% endblocktrans %}
-                  </div>
-                {% endif %}
-              {% endif %}
             {% endif %}
+          {% endif %}
+          {% if group.tracking_number %}
+            <div class="card-action">
+              {% blocktrans trimmed with tracking=group.tracking_number context "Shipment group table text" %}
+                Tracking number: {{ tracking }}
+              {% endblocktrans %}
+            </div>
           {% endif %}
         </div>
       {% endfor %}
@@ -385,7 +386,7 @@
                   {% trans "Grand total" context "Order totals header" %}
                 </td>
                 <td>
-                  {% gross order.get_total html=True %}
+                  {{ order.total.gross|amount:'html' }}
                 </td>
               </tr>
             </tfoot>
@@ -395,7 +396,7 @@
                   {% trans "Subtotal" context "Order subtotal" %}
                 </td>
                 <td class="right-align">
-                  {% gross order.get_subtotal_without_voucher html=True %}
+                  {{ order.get_subtotal.gross|amount:'html' }}
                 </td>
               </tr>
               <tr>
@@ -403,17 +404,17 @@
                   {% trans "Shipping" context "Order totals header" %}
                 </td>
                 <td class="right-align">
-                  {% gross order.shipping_price html=True %}
+                  {{ order.shipping_price.gross|amount:'html' }}
                 </td>
               </tr>
-              {% if order.discount_amount.gross %}
+              {% if order.discount_amount %}
                 <tr>
                   <td>
                     <a class="dropdown-button" href="#" data-activates="voucher-actions" data-constrainwidth="false">
                       {% blocktrans trimmed with voucher=order.discount_name context "Order totals header" %}
                         Voucher {{ voucher }}
                       {% endblocktrans %}
-                      <svg data-src="{% static "dashboard/images/arrow_drop_down.svg" %}" />
+                      <svg data-src="{% static "dashboard/images/arrow-drop-down.svg" %}" />
                     </a>
                     <ul id="voucher-actions" class="dropdown-content">
                       <li>
@@ -425,7 +426,7 @@
                     </ul>
                   </td>
                   <td class="right-align">
-                    {% gross order.discount|discount_amount_for:order.total html=True %}
+                    {% discount_as_negative order.discount_amount html=True %}
                   </td>
                 </tr>
             {% endif %}
@@ -433,7 +434,7 @@
           </table>
         </div>
       </div>
-      <div class="card{% if not notes %} print-hide{% endif %}" id="order-notes">
+      <div class="card order-notes{% if not notes %} print-hide{% endif %}" id="order-notes">
         <div class="card-content">
           <span class="card-title black-text">
             {% trans "Order notes" context "Order notes card title" %}
@@ -522,18 +523,16 @@
   </div>
   <div class="tab-content" id="order-history">
     <p class="print-show print-tabs">{% trans "History" context "Order detail tab" %}</p>
-  <div class="timeline-outer">
-    <ul class="timeline">
-      {% for event in order.history.all %}
-        <li class="event" data-date="{{ event.date }}">
-          <div class="content">
-            {{ event.comment|default:"" }}{% if event.user %} by {{ event.user }}{% endif %}
-            <div class="status">
-              {% render_status event.status event.get_status_display %}
+    <div class="timeline-outer">
+      <ul class="timeline">
+        {% for event in order.history.all %}
+          <li class="event" data-date="{{ event.date }}">
+            <div class="content">
+              {{ event.content|default:"" }}{% if event.user %} by {{ event.user }}{% endif %}
             </div>
-          </div>
-        </li>
-      {% endfor %}
-    </ul>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
 {% endblock %}
