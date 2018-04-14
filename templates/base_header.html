@@ -2,12 +2,14 @@
 {% load staticfiles %}
 {% load render_bundle from webpack_loader %}
 
-<header class="navbar" role="navigation">
+<header class="navbar p-top_small" role="navigation">
   <div class="navbar__login container-fluid {% if user.is_impersonate %} bg-warning{% endif %}">
     <div class=" d-none d-md-block container">
 	    <div class="row">
 	      <div class="col-6">
-	        <p class="text-left">WEIRD P IMG goes here</p>
+	      	<a href="{% url 'home' %}" class="logo navbar__logo">
+	          <svg class="navbar-logo" data-src="{% static "images/placeholders/logo-deepBlue.svg" %}" />
+	        </a>
 	      </div>
 	      <div class="col-6">
 	        <ul class="float-right">
