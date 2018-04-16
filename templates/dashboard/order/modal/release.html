@@ -12,8 +12,10 @@
 {% endblock %}
 
 {% block content %}
-{% trans "Do you want to release the payment?" context "Modal release payment text" %}
-{{ form|materializecss }}
+  {{ form|materializecss }}
+  <div class="col s12">
+    {% trans "Do you want to release the payment?" context "Modal release payment text" %}
+  </div>
 {% endblock %}
 
 {% block primary_action %}

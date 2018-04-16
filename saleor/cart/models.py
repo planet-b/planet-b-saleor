@@ -1,6 +1,7 @@
 """Cart-related ORM models."""
 from collections import namedtuple
 from decimal import Decimal
+from itertools import groupby
 from uuid import uuid4
 
 from django.conf import settings
@@ -8,11 +9,9 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.encoding import smart_str
 from django.utils.timezone import now
-from django.utils.translation import pgettext_lazy
-from django_prices.models import PriceField
+from django_prices.models import MoneyField
 from jsonfield import JSONField
-from prices import Price
-from satchless.item import ItemLine, ItemList, partition
+from prices import sum as sum_prices
 
 from . import CartStatus, logger
 
@@ -30,14 +29,6 @@ def find_open_cart_for_user(user):
     return carts.first()
 
 
-class ProductGroup(ItemList):
-    """A group of products."""
-
-    def is_shipping_required(self):
-        """Return `True` if any product in group requires shipping."""
-        return any(p.is_shipping_required() for p in self)
-
-
 class CartQueryset(models.QuerySet):
     """A specialized queryset for dealing with carts."""
 
@@ -48,18 +39,6 @@ class CartQueryset(models.QuerySet):
     def open(self):
         """Return `OPEN` carts."""
         return self.filter(status=CartStatus.OPEN)
-
-    def saved(self):
-        """Return `SAVED` carts."""
-        return self.filter(status=CartStatus.SAVED)
-
-    def waiting_for_payment(self):
-        """Return `SAVED_FOR_PAYMENT` carts."""
-        return self.filter(status=CartStatus.WAITING_FOR_PAYMENT)
-
-    def checkout(self):
-        """Return carts in `CHECKOUT` state."""
-        return self.filter(status=CartStatus.CHECKOUT)
 
     def canceled(self):
         """Return `CANCELED` carts."""
@@ -72,10 +51,10 @@ class CartQueryset(models.QuerySet):
         problem.
         """
         return self.prefetch_related(
-            'lines__variant__product__categories',
+            'lines__variant__product__category',
             'lines__variant__product__images',
-            'lines__variant__product__product_class__product_attributes__values',  # noqa
-            'lines__variant__product__product_class__variant_attributes__values',  # noqa
+            'lines__variant__product__product_type__product_attributes__values',  # noqa
+            'lines__variant__product__product_type__variant_attributes__values',  # noqa
             'lines__variant__stock')
 
 
@@ -83,34 +62,22 @@ class Cart(models.Model):
     """A shopping cart."""
 
     status = models.CharField(
-        pgettext_lazy('Cart field', 'order status'),
         max_length=32, choices=CartStatus.CHOICES, default=CartStatus.OPEN)
-    created = models.DateTimeField(
-        pgettext_lazy('Cart field', 'created'), auto_now_add=True)
-    last_status_change = models.DateTimeField(
-        pgettext_lazy('Cart field', 'last status change'), auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True)
+    last_status_change = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, blank=True, null=True, related_name='carts',
-        verbose_name=pgettext_lazy('Cart field', 'user'),
         on_delete=models.CASCADE)
-    email = models.EmailField(
-        pgettext_lazy('Cart field', 'email'), blank=True, null=True)
-    token = models.UUIDField(
-        pgettext_lazy('Cart field', 'token'),
-        primary_key=True, default=uuid4, editable=False)
+    email = models.EmailField(blank=True, null=True)
+    token = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     voucher = models.ForeignKey(
         'discount.Voucher', null=True, related_name='+',
-        on_delete=models.SET_NULL,
-        verbose_name=pgettext_lazy('Cart field', 'token'))
-    checkout_data = JSONField(
-        verbose_name=pgettext_lazy('Cart field', 'checkout data'), null=True,
-        editable=False,)
-    total = PriceField(
-        pgettext_lazy('Cart field', 'total'),
+        on_delete=models.SET_NULL)
+    checkout_data = JSONField(null=True, editable=False)
+    total = MoneyField(
         currency=settings.DEFAULT_CURRENCY, max_digits=12, decimal_places=2,
         default=0)
-    quantity = models.PositiveIntegerField(
-        pgettext_lazy('Cart field', 'quantity'), default=0)
+    quantity = models.PositiveIntegerField(default=0)
 
     objects = CartQueryset.as_manager()
 
@@ -160,19 +127,14 @@ class Cart(models.Model):
     def __len__(self):
         return self.lines.count()
 
-    # pylint: disable=R0201
-    def get_subtotal(self, item, **kwargs):
-        """Return the cost of a cart line."""
-        return item.get_total(**kwargs)
-
-    def get_total(self, **kwargs):
+    def get_total(self, discounts=None):
         """Return the total cost of the cart prior to shipping."""
-        subtotals = [
-            self.get_subtotal(item, **kwargs) for item in self.lines.all()]
+        if not discounts:
+            discounts = self.discounts
+        subtotals = [line.get_total(discounts) for line in self.lines.all()]
         if not subtotals:
-            raise AttributeError('Calling get_total() on an empty item set')
-        zero = Price(0, currency=settings.DEFAULT_CURRENCY)
-        return sum(subtotals, zero)
+            raise AttributeError('Calling get_total() on an empty cart')
+        return sum_prices(subtotals)
 
     def count(self):
         """Return the total quantity in cart."""
@@ -197,10 +159,12 @@ class Cart(models.Model):
         all_lines = self.lines.all()
         if data is None:
             data = {}
-        line = [line for line in all_lines
-                if line.variant_id == variant.id and line.data == data]
+        line = [
+            line for line in all_lines
+            if line.variant_id == variant.id and line.data == data]
         if line:
             return line[0]
+        return None
 
     def add(self, variant, quantity=1, data=None, replace=False,
             check_quantity=True):
@@ -234,14 +198,8 @@ class Cart(models.Model):
             cart_line.save(update_fields=['quantity'])
         self.update_quantity()
 
-    def partition(self):
-        """Split the card into a list of groups for shipping."""
-        grouper = (
-            lambda p: 'physical' if p.is_shipping_required() else 'digital')
-        return partition(self.lines.all(), grouper, ProductGroup)
 
-
-class CartLine(models.Model, ItemLine):
+class CartLine(models.Model):
     """A single cart line.
 
     Multiple lines in the same cart can refer to the same product variant if
@@ -249,19 +207,12 @@ class CartLine(models.Model, ItemLine):
     """
 
     cart = models.ForeignKey(
-        Cart, related_name='lines',
-        verbose_name=pgettext_lazy('Cart line field', 'cart'),
-        on_delete=models.CASCADE)
+        Cart, related_name='lines', on_delete=models.CASCADE)
     variant = models.ForeignKey(
-        'product.ProductVariant', related_name='+',
-        verbose_name=pgettext_lazy('Cart line field', 'product'),
-        on_delete=models.CASCADE)
+        'product.ProductVariant', related_name='+', on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(
-        pgettext_lazy('Cart line field', 'quantity'),
         validators=[MinValueValidator(0), MaxValueValidator(999)])
-    data = JSONField(
-        blank=True, default={},
-        verbose_name=pgettext_lazy('Cart line field', 'data'))
+    data = JSONField(blank=True, default={})
 
     class Meta:
         unique_together = ('cart', 'variant', 'data')
@@ -273,9 +224,10 @@ class CartLine(models.Model, ItemLine):
         if not isinstance(other, CartLine):
             return NotImplemented
 
-        return (self.variant == other.variant and
-                self.quantity == other.quantity and
-                self.data == other.data)
+        return (
+            self.variant == other.variant and
+            self.quantity == other.quantity and
+            self.data == other.data)
 
     def __ne__(self, other):
         return not self == other  # pragma: no cover
@@ -290,19 +242,15 @@ class CartLine(models.Model, ItemLine):
     def __setstate__(self, data):
         self.variant, self.quantity, self.data = data
 
-    def get_total(self, **kwargs):
+    def get_total(self, discounts=None):
         """Return the total price of this line."""
-        amount = super().get_total(**kwargs)
+        amount = self.get_price_per_item(discounts) * self.quantity
         return amount.quantize(CENTS)
 
-    def get_quantity(self, **kwargs):
-        """Return the line's quantity."""
-        return self.quantity
-
     # pylint: disable=W0221
-    def get_price_per_item(self, discounts=None, **kwargs):
+    def get_price_per_item(self, discounts=None):
         """Return the unit price of the line."""
-        return self.variant.get_price_per_item(discounts=discounts, **kwargs)
+        return self.variant.get_price_per_item(discounts=discounts)
 
     def is_shipping_required(self):
         """Return `True` if the related product variant requires shipping."""

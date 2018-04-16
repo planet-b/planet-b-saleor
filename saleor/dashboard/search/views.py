@@ -7,7 +7,7 @@ from .forms import DashboardSearchForm
 
 
 def limit_results(*results):
-    '''Pass-through only first few best items for each result query'''
+    """Pass-through only first few best items for each result query."""
     limit = settings.DASHBOARD_SEARCH_LIMIT
     return (qs[:limit] for qs in results)
 
@@ -20,7 +20,7 @@ def get_results(request, form):
     users = results['users']
     if not user.has_perm('order.view_order'):
         orders = orders.none()
-    if not user.has_perm('userprofile.view_user'):
+    if not user.has_perm('account.view_user'):
         users = users.none()
     return limit_results(products, orders, users)
 

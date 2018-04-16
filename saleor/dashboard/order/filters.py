@@ -2,23 +2,21 @@ from django import forms
 from django.db.models import Q
 from django.utils.translation import npgettext, pgettext_lazy
 from django_filters import (
-    CharFilter, ChoiceFilter, DateFromToRangeFilter, NumberFilter, RangeFilter,
-    OrderingFilter)
+    CharFilter, ChoiceFilter, DateFromToRangeFilter, NumberFilter,
+    OrderingFilter, RangeFilter)
 from payments import PaymentStatus
 
 from ...core.filters import SortedFilterSet
 from ...order import OrderStatus
 from ...order.models import Order
-from ..widgets import DateRangeWidget, PriceRangeWidget
+from ..widgets import DateRangeWidget, MoneyRangeWidget
 
-
-SORT_BY_FIELDS = (
+SORT_BY_FIELDS = [
     ('pk', 'pk'),
     ('payments__status', 'payment_status'),
     ('user__email', 'email'),
     ('created', 'created'),
-    ('total_net', 'total')
-)
+    ('total_net', 'total')]
 
 SORT_BY_FIELDS_LABELS = {
     'pk': pgettext_lazy('Order list sorting option', '#'),
@@ -43,7 +41,7 @@ class OrderFilter(SortedFilterSet):
             'Order list filter label', 'Order status'),
         choices=OrderStatus.CHOICES,
         empty_label=pgettext_lazy('Filter empty choice label', 'All'),
-        method='filter_by_status', widget=forms.Select)
+        widget=forms.Select)
     payment_status = ChoiceFilter(
         label=pgettext_lazy('Order list filter label', 'Payment status'),
         name='payments__status',
@@ -52,7 +50,7 @@ class OrderFilter(SortedFilterSet):
         widget=forms.Select)
     total_net = RangeFilter(
         label=pgettext_lazy('Order list filter label', 'Total'),
-        widget=PriceRangeWidget)
+        widget=MoneyRangeWidget)
     sort_by = OrderingFilter(
         label=pgettext_lazy('Order list filter label', 'Sort by'),
         fields=SORT_BY_FIELDS,
@@ -67,13 +65,6 @@ class OrderFilter(SortedFilterSet):
             Q(user__email__icontains=value) |
             Q(user__default_billing_address__first_name__icontains=value) |
             Q(user__default_billing_address__last_name__icontains=value))
-
-    def filter_by_status(self, queryset, name, value):
-        """Filter by status using custom querysets."""
-        return (
-            queryset.open() if value == OrderStatus.OPEN
-            else queryset.closed()
-        )
 
     def get_summary_message(self):
         counter = self.qs.count()

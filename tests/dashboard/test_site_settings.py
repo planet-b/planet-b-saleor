@@ -1,9 +1,9 @@
+import pytest
 from django.contrib.sites.models import Site
 from django.db.utils import IntegrityError
 from django.test.client import RequestFactory
 from django.urls import reverse
 from django.utils.encoding import smart_text
-import pytest
 
 from saleor.dashboard.sites.forms import SiteForm, SiteSettingsForm
 from saleor.site import utils
@@ -65,11 +65,6 @@ def test_site_update_view(admin_client, site_settings):
 def test_get_authorization_key_for_backend(site_settings, authorization_key):
     key_for_backend = utils.get_authorization_key_for_backend('Backend')
     assert key_for_backend == authorization_key
-
-
-@pytest.mark.django_db
-def test_get_authorization_key_for_backend(site_settings):
-    assert utils.get_authorization_key_for_backend('Backend') is None
 
 
 @pytest.mark.django_db
