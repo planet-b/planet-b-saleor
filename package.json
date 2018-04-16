@@ -32,7 +32,8 @@
     "react-dom": "^15.4.2",
     "select2": "^4.0.3",
     "sortablejs": "^1.5.0-rc1",
-    "svg-injector-2": "^2.0.35"
+    "svg-injector-2": "^2.0.35",
+    "snyk": "^1.71.0"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.4",
@@ -82,6 +83,9 @@
   "scripts": {
     "build-assets": "node ./node_modules/webpack/bin/webpack.js -p",
     "heroku-postbuild": "npm run build-assets",
-    "start": "UV_THREADPOOL_SIZE=8 node ./node_modules/webpack/bin/webpack.js -d --watch"
-  }
+    "start": "UV_THREADPOOL_SIZE=8 node ./node_modules/webpack/bin/webpack.js -d --watch",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
+  },
+  "snyk": true
 }
