@@ -1,15 +1,14 @@
-from django import forms, template
+from django import forms
 from django.template.loader import get_template
+from django import template
 from django_filters.widgets import RangeWidget
-
-from ...dashboard.widgets import (
-    CharsLeftWidget, DateRangeWidget, MoneyRangeWidget)
+from ...dashboard.widgets import DateRangeWidget, PriceRangeWidget
 
 register = template.Library()
 
 
 @register.filter
-def materializecss(element, label_cols=None):
+def materializecss(element, label_cols={}):
     if not label_cols:
         label_cols = 's12'
 
@@ -99,9 +98,4 @@ def is_date_range(field):
 
 @register.filter
 def is_price_range(field):
-    return isinstance(field.field.widget, MoneyRangeWidget)
-
-
-@register.filter
-def is_chars_left(field):
-    return isinstance(field.field.widget, CharsLeftWidget)
+    return isinstance(field.field.widget, PriceRangeWidget)

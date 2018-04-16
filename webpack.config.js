@@ -1,12 +1,13 @@
 var BundleTracker = require('webpack-bundle-tracker');
-var MiniCssExtractPlugin = require('mini-css-extract-plugin');
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
+var FaviconsWebpackPlugin = require('favicons-webpack-plugin');
 var path = require('path');
 var webpack = require('webpack');
 var autoprefixer = require('autoprefixer');
 
 var resolve = path.resolve.bind(path, __dirname);
 
-var extractCssPlugin;
+var extractTextPlugin;
 var fileLoaderPath;
 var output;
 
@@ -14,30 +15,34 @@ if (process.env.NODE_ENV === 'production') {
   output = {
     path: resolve('saleor/static/assets/'),
     filename: '[name].[chunkhash].js',
-    chunkFilename: '[name].[chunkhash].js',
     publicPath: process.env.STATIC_URL || '/static/assets/'
   };
   fileLoaderPath = 'file-loader?name=[name].[hash].[ext]';
-  extractCssPlugin = new MiniCssExtractPlugin({
-    filename: '[name].[chunkhash].css',
-    chunkFilename: '[id].[chunkhash].css'
-  });
+  extractTextPlugin = new ExtractTextPlugin('[name].[contenthash].css');
 } else {
   output = {
     path: resolve('saleor/static/assets/'),
     filename: '[name].js',
-    chunkFilename: '[name].js',
     publicPath: '/static/assets/'
   };
   fileLoaderPath = 'file-loader?name=[name].[ext]';
-  extractCssPlugin = new MiniCssExtractPlugin({
-    filename: '[name].css',
-    chunkFilename: '[name].css'
-  });
+  extractTextPlugin = new ExtractTextPlugin('[name].css');
 }
 
 var bundleTrackerPlugin = new BundleTracker({
   filename: 'webpack-bundle.json'
+});
+
+var commonsChunkPlugin = new webpack.optimize.CommonsChunkPlugin({
+  names: 'vendor'
+});
+
+var occurenceOrderPlugin = new webpack.optimize.OccurrenceOrderPlugin();
+
+var environmentPlugin = new webpack.DefinePlugin({
+  'process.env': {
+    NODE_ENV: JSON.stringify(process.env.NODE_ENV || 'development')
+  }
 });
 
 var providePlugin = new webpack.ProvidePlugin({
@@ -48,11 +53,24 @@ var providePlugin = new webpack.ProvidePlugin({
   'query-string': 'query-string'
 });
 
+var faviconsWebpackPlugin = new FaviconsWebpackPlugin({
+  logo: './saleor/static/images/favicon.svg',
+  prefix: 'favicons/',
+  title: "Saleor"
+});
+
 var config = {
   entry: {
     dashboard: './saleor/static/dashboard/js/dashboard.js',
     document: './saleor/static/dashboard/js/document.js',
-    storefront: './saleor/static/js/storefront.js'
+    storefront: './saleor/static/js/storefront.js',
+    vendor: [
+      'babel-es6-polyfill',
+      'bootstrap',
+      'jquery',
+      'jquery.cookie',
+      'react'
+    ]
   },
   output: output,
   module: {
@@ -64,30 +82,31 @@ var config = {
       },
       {
         test: /\.scss$/,
-        use: [
-          MiniCssExtractPlugin.loader,
-          {
-            loader: 'css-loader',
-            options: {
-              'sourceMap': true
-            }
-          },
-          {
-            loader: 'postcss-loader',
-            options: {
-              'sourceMap': true,
-              'plugins': function () {
-                return [autoprefixer];
+        loader: ExtractTextPlugin.extract({
+          use: [
+            {
+              loader: 'css-loader',
+              options: {
+                'sourceMap': true
+              }
+            },
+            {
+              loader: 'postcss-loader',
+              options: {
+                'sourceMap': true,
+                'plugins': function () {
+                  return [autoprefixer];
+                }
+              }
+            },
+            {
+              loader: 'sass-loader',
+              options: {
+                'sourceMap': true
               }
             }
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              'sourceMap': true
-            }
-          }
-        ]
+          ]
+        })
       },
       {
         test: /\.(eot|otf|png|svg|jpg|ttf|woff|woff2)(\?v=[0-9.]+)?$/,
@@ -103,8 +122,12 @@ var config = {
   },
   plugins: [
     bundleTrackerPlugin,
-    extractCssPlugin,
-    providePlugin
+    commonsChunkPlugin,
+    environmentPlugin,
+    extractTextPlugin,
+    occurenceOrderPlugin,
+    providePlugin,
+    faviconsWebpackPlugin
   ],
   resolve: {
     alias: {

@@ -1,3 +1,4 @@
+import pytest
 from django.urls import reverse
 
 from saleor.product.models import Category

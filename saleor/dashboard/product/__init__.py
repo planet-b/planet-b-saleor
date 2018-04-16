@@ -3,7 +3,6 @@ from django.utils.translation import pgettext_lazy
 
 class ProductBulkAction:
     """Represents types of product bulk actions handled in dashboard."""
-
     PUBLISH = 'Publish'
     UNPUBLISH = 'Unpublish'
 

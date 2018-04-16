@@ -3,31 +3,24 @@ from functools import wraps
 from django.conf import settings
 from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect
-from prices import Money
+from django.utils.translation import pgettext_lazy
+from prices import Price
+from satchless.item import InsufficientStock
 
-from saleor.order.models import OrderLine
-from ..account.utils import store_user_address
-from ..core.exceptions import InsufficientStock
-from ..dashboard.order.utils import get_voucher_discount_for_order
-from ..order import FulfillmentStatus, OrderStatus
-from ..product.utils import allocate_stock, deallocate_stock, increase_stock
+from ..product.models import Stock
+from ..userprofile.utils import store_user_address
+from .models import Order, OrderLine
+from . import GroupStatus
 
 
 def check_order_status(func):
-    """Check if order meets preconditions of payment process.
-
-    Order can not have draft status or be fully paid. Billing address
-    must be provided.
-    If not, redirect to order details page.
-    """
-    # pylint: disable=cyclic-import
-    from .models import Order
-
+    """Preserves execution of function if order is fully paid by redirecting
+    to order's details page."""
     @wraps(func)
     def decorator(*args, **kwargs):
         token = kwargs.pop('token')
-        order = get_object_or_404(Order.objects.confirmed(), token=token)
-        if not order.billing_address or order.is_fully_paid():
+        order = get_object_or_404(Order, token=token)
+        if order.is_fully_paid():
             return redirect('order:details', token=order.token)
         kwargs['order'] = order
         return func(*args, **kwargs)
@@ -35,88 +28,25 @@ def check_order_status(func):
     return decorator
 
 
-def update_voucher_discount(func):
-    """Recalculate order discount amount based on order voucher."""
-
-    @wraps(func)
-    def decorator(*args, **kwargs):
-        if kwargs.pop('update_voucher_discount', True):
-            order = args[0]
-            order.discount_amount = (
-                get_voucher_discount_for_order(order) or
-                Money(0, settings.DEFAULT_CURRENCY))
-        return func(*args, **kwargs)
-
-    return decorator
+def cancel_order(order):
+    """Cancells order by cancelling all associated shipment groups."""
+    for group in order.groups.all():
+        cancel_delivery_group(group)
 
 
-@update_voucher_discount
-def recalculate_order(order, **kwargs):
-    """Recalculate and assign total price of order.
-
-    Total price is a sum of items in order and order shipping price minus
-    discount amount.
-
-    Voucher discount amount is recalculated by default. To avoid this, pass
-    update_voucher_discount argument set to False.
-    """
-    # avoid using prefetched order lines
-    lines = [OrderLine.objects.get(pk=line.pk) for line in order]
-    prices = [line.get_total() for line in lines]
-    total = sum(prices, order.shipping_price)
-    # discount amount can't be greater than order total
-    order.discount_amount = min(order.discount_amount, total.gross)
-    if order.discount_amount:
-        total -= order.discount_amount
+def recalculate_order(order):
+    """Recalculates and assigns total price of order.
+    Total price is a sum of items and shippings in order shipment groups."""
+    prices = [
+        group.get_total() for group in order
+        if group.status != GroupStatus.CANCELLED]
+    total_net = sum(p.net for p in prices)
+    total_gross = sum(p.gross for p in prices)
+    total = Price(
+        net=total_net, gross=total_gross, currency=settings.DEFAULT_CURRENCY)
+    total += order.shipping_price
     order.total = total
     order.save()
-
-
-def cancel_order(order, restock):
-    """Cancel order and associated fulfillments.
-
-    Return products to corresponding stocks if restock is set to True.
-    """
-    if restock:
-        restock_order_lines(order)
-    for fulfillment in order.fulfillments.all():
-        fulfillment.status = FulfillmentStatus.CANCELED
-        fulfillment.save(update_fields=['status'])
-    order.status = OrderStatus.CANCELED
-    order.save(update_fields=['status'])
-
-
-def update_order_status(order):
-    """Update order status depending on fulfillments."""
-    quantity_fulfilled = order.quantity_fulfilled
-    total_quantity = order.get_total_quantity()
-
-    if quantity_fulfilled <= 0:
-        status = OrderStatus.UNFULFILLED
-    elif quantity_fulfilled < total_quantity:
-        status = OrderStatus.PARTIALLY_FULFILLED
-    else:
-        status = OrderStatus.FULFILLED
-
-    if status != order.status:
-        order.status = status
-        order.save(update_fields=['status'])
-
-
-def cancel_fulfillment(fulfillment, restock):
-    """Cancel fulfillment.
-
-    Return products to corresponding stocks if restock is set to True.
-    """
-    if restock:
-        restock_fulfillment_lines(fulfillment)
-    for line in fulfillment:
-        order_line = line.order_line
-        order_line.quantity_fulfilled -= line.quantity
-        order_line.save(update_fields=['quantity_fulfilled'])
-    fulfillment.status = FulfillmentStatus.CANCELED
-    fulfillment.save(update_fields=['status'])
-    update_order_status(fulfillment.order)
 
 
 def attach_order_to_user(order, user):
@@ -128,10 +58,17 @@ def attach_order_to_user(order, user):
     order.save(update_fields=['user'])
 
 
-def add_variant_to_order(
-        order, variant, total_quantity, discounts=None, add_to_existing=True):
-    """Add total_quantity of variant to order.
+def fill_group_with_partition(group, partition, discounts=None):
+    """Fills shipment group with order lines created from partition items."""
+    for item in partition:
+        add_variant_to_delivery_group(
+            group, item.variant, item.get_quantity(), discounts,
+            add_to_existing=False)
 
+
+def add_variant_to_delivery_group(
+        group, variant, total_quantity, discounts=None, add_to_existing=True):
+    """Adds total_quantity of variant to group.
     Raises InsufficientStock exception if quantity could not be fulfilled.
 
     By default, first adds variant to existing lines with same variant.
@@ -140,8 +77,10 @@ def add_variant_to_order(
     Order lines are created by increasing quantity of lines,
     as long as total_quantity of variant will be added.
     """
-    quantity_left = add_variant_to_existing_lines(
-        order, variant, total_quantity) if add_to_existing else total_quantity
+    quantity_left = (
+        add_variant_to_existing_lines(
+            group, variant, total_quantity) if add_to_existing
+        else total_quantity)
     price = variant.get_price_per_item(discounts)
     while quantity_left > 0:
         stock = variant.select_stockrecord()
@@ -152,24 +91,23 @@ def add_variant_to_order(
             if quantity_left > stock.quantity_available
             else quantity_left
         )
-        order.lines.create(
+        group.lines.create(
             product=variant.product,
             product_name=variant.display_product(),
             product_sku=variant.sku,
-            is_shipping_required=(
-                variant.product.product_type.is_shipping_required),
             quantity=quantity,
-            unit_price=price,
+            unit_price_net=price.net,
+            unit_price_gross=price.gross,
             stock=stock,
             stock_location=stock.location.name)
-        allocate_stock(stock, quantity)
+        Stock.objects.allocate_stock(stock, quantity)
         # refresh stock for accessing quantity_allocated
         stock.refresh_from_db()
         quantity_left -= quantity
 
 
-def add_variant_to_existing_lines(order, variant, total_quantity):
-    """Add variant to existing lines with same variant.
+def add_variant_to_existing_lines(group, variant, total_quantity):
+    """Adds variant to existing lines with same variant.
 
     Variant is added by increasing quantity of lines with same variant,
     as long as total_quantity of variant will be added
@@ -178,7 +116,7 @@ def add_variant_to_existing_lines(order, variant, total_quantity):
     Returns quantity that could not be fulfilled with existing lines.
     """
     # order descending by lines' stock available quantity
-    lines = order.lines.filter(
+    lines = group.lines.filter(
         product=variant.product, product_sku=variant.sku,
         stock__isnull=False).order_by(
             F('stock__quantity_allocated') - F('stock__quantity'))
@@ -191,54 +129,84 @@ def add_variant_to_existing_lines(order, variant, total_quantity):
             else quantity_left)
         line.quantity += quantity
         line.save()
-        allocate_stock(line.stock, quantity)
+        Stock.objects.allocate_stock(line.stock, quantity)
         quantity_left -= quantity
         if quantity_left == 0:
             break
     return quantity_left
 
 
-def merge_duplicates_into_order_line(line):
-    """Merge duplicated lines in order into one (given) line.
+def cancel_delivery_group(group):
+    """Cancells shipment group and (optionally) it's order if necessary."""
+    for line in group:
+        Stock.objects.deallocate_stock(line.stock, line.quantity)
+    group.status = GroupStatus.CANCELLED
+    group.save()
 
+
+def merge_duplicates_into_order_line(line):
+    """Merges duplicated lines in shipment group into one (given) line.
     If there are no duplicates, nothing will happen.
     """
-    lines = line.order.lines.filter(
+    lines = line.delivery_group.lines.filter(
         product=line.product, product_name=line.product_name,
-        product_sku=line.product_sku, stock=line.stock,
-        is_shipping_required=line.is_shipping_required)
+        product_sku=line.product_sku, stock=line.stock)
     if lines.count() > 1:
         line.quantity = sum([line.quantity for line in lines])
-        line.save(update_fields=['quantity'])
+        line.save()
         lines.exclude(pk=line.pk).delete()
 
 
 def change_order_line_quantity(line, new_quantity):
     """Change the quantity of ordered items in a order line."""
     line.quantity = new_quantity
+    line.save()
 
+    if not line.delivery_group.get_total_quantity():
+        line.delivery_group.delete()
+        order = line.delivery_group.order
+        if not order.get_lines():
+            order.create_history_entry(
+                status=order.status, comment=pgettext_lazy(
+                    'Order status history entry',
+                    'Order cancelled. No items in order'))
+
+
+def remove_empty_groups(line, force=False):
+    """Removes order line and associated shipment group and order.
+    Remove is done only if quantity of order line or items in group or in order
+    is equal to 0."""
+    source_group = line.delivery_group
+    order = source_group.order
     if line.quantity:
         line.save()
     else:
         line.delete()
+    if not source_group.get_total_quantity() or force:
+        source_group.delete()
+    if not order.get_lines():
+        order.create_history_entry(
+            status=order.status, comment=pgettext_lazy(
+                'Order status history entry',
+                'Order cancelled. No items in order'))
 
 
-def restock_order_lines(order):
-    """Return ordered products to corresponding stocks."""
-    for line in order:
-        if line.stock:
-            if line.quantity_unfulfilled > 0:
-                deallocate_stock(line.stock, line.quantity_unfulfilled)
-            if line.quantity_fulfilled > 0:
-                increase_stock(line.stock, line.quantity_fulfilled)
-                line.quantity_fulfilled = 0
-                line.save(update_fields=['quantity_fulfilled'])
-
-
-def restock_fulfillment_lines(fulfillment, allocate=True):
-    """Return fulfilled products to corresponding stocks."""
-    for line in fulfillment:
-        order_line = line.order_line
-        if order_line.stock:
-            increase_stock(
-                line.order_line.stock, line.quantity, allocate=allocate)
+def move_order_line_to_group(line, target_group, quantity):
+    """Moves given quantity of order line to another shipment group."""
+    try:
+        target_line = target_group.lines.get(
+            product=line.product, product_name=line.product_name,
+            product_sku=line.product_sku, stock=line.stock)
+    except OrderLine.DoesNotExist:
+        target_group.lines.create(
+            delivery_group=target_group, product=line.product,
+            product_name=line.product_name, product_sku=line.product_sku,
+            quantity=quantity, unit_price_net=line.unit_price_net,
+            stock=line.stock,
+            stock_location=line.stock_location,
+            unit_price_gross=line.unit_price_gross)
+    else:
+        target_line.quantity += quantity
+        target_line.save()
+    line.quantity -= quantity
+    remove_empty_groups(line)

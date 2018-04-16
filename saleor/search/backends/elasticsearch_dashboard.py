@@ -28,23 +28,14 @@ def _search_orders(phrase):
 
 
 def get_search_queries(phrase):
-    """Return querysets to lookup different types of objects.
-
-    Args:
-        phrase (str): searched phrase
-    """
+    ''' Execute external search for all objects matching phrase  '''
     return {
         'products': _search_products(phrase),
         'users': _search_users(phrase),
-        'orders': _search_orders(phrase)}
+        'orders': _search_orders(phrase)
+    }
 
 
 def search(phrase):
-    """Return all matching objects for dashboard views.
-
-    Composes independent search querysets into a single dictionary.
-
-    Args:
-        phrase (str): searched phrase
-    """
+    ''' Provide queryset for every search result '''
     return {k: s.to_queryset() for k, s in get_search_queries(phrase).items()}

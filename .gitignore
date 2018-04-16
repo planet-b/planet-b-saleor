@@ -29,7 +29,6 @@ dist/
 /static/
 /saleor/static/assets/
 webpack-bundle.json
-/templates/templated_email/compiled/
 *.orig
 *.mo
 

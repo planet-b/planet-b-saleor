@@ -15,11 +15,9 @@
 {% endblock title %}
 
 {% block content %}
-  <div class="col s12">
-    {% blocktrans trimmed context "Modal remove attribute text" %}
-      Are you sure you want to remove attribute <strong>{{ attribute }}</strong>?
-    {% endblocktrans %}
-  </div>
+{% blocktrans trimmed context "Modal remove attribute text" %}
+  Are you sure you want to remove attribute <strong>{{ attribute }}</strong>?
+{% endblocktrans %}
 {% endblock content %}
 
 {% block primary_action %}

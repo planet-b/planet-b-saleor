@@ -1,5 +1,4 @@
 import decimal
-import logging
 from json import JSONEncoder
 from urllib.parse import urljoin
 
@@ -10,22 +9,15 @@ from django.contrib.sites.models import Site
 from django.core.paginator import InvalidPage, Paginator
 from django.http import Http404
 from django.utils.encoding import iri_to_uri, smart_text
-from django_babel.templatetags.babel import currencyfmt
 from django_countries import countries
 from django_countries.fields import Country
 from django_prices_openexchangerates import exchange_currency
 from geolite2 import geolite2
-from prices import Money, MoneyRange, TaxedMoney
-from versatileimagefield.image_warmer import VersatileImageFieldWarmer
+from prices import PriceRange
 
-from ...account.models import User
-
-ZERO_TAXED_MONEY = TaxedMoney(
-    net=Money(0, settings.DEFAULT_CURRENCY),
-    gross=Money(0, settings.DEFAULT_CURRENCY))
+from ...userprofile.models import User
 
 georeader = geolite2.reader()
-logger = logging.getLogger(__name__)
 
 
 class CategoryChoiceField(forms.ModelChoiceField):
@@ -61,19 +53,15 @@ def get_client_ip(request):
 
 def get_country_by_ip(ip_address):
     geo_data = georeader.get(ip_address)
-    if (
-            geo_data and
-            'country' in geo_data and
-            'iso_code' in geo_data['country']):
+    if geo_data and 'country' in geo_data and 'iso_code' in geo_data['country']:
         country_iso_code = geo_data['country']['iso_code']
         if country_iso_code in countries:
             return Country(country_iso_code)
-    return None
 
 
 def get_currency_for_country(country):
     currencies = get_territory_currencies(country.code)
-    if currencies:
+    if len(currencies):
         return currencies[0]
     return settings.DEFAULT_CURRENCY
 
@@ -95,15 +83,11 @@ def get_paginator_items(items, paginate_by, page_number):
     return items
 
 
-def format_money(money):
-    return currencyfmt(money.amount, money.currency)
-
-
 def to_local_currency(price, currency):
     if not settings.OPENEXCHANGERATES_API_KEY:
-        return None
-    if isinstance(price, MoneyRange):
-        from_currency = price.start.currency
+        return
+    if isinstance(price, PriceRange):
+        from_currency = price.min_price.currency
     else:
         from_currency = price.currency
     if currency != from_currency:
@@ -111,7 +95,6 @@ def to_local_currency(price, currency):
             return exchange_currency(price, currency)
         except ValueError:
             pass
-    return None
 
 
 def get_user_shipping_country(request):
@@ -125,7 +108,7 @@ def get_user_shipping_country(request):
 def serialize_decimal(obj):
     if isinstance(obj, decimal.Decimal):
         return str(obj)
-    return JSONEncoder().default(obj)
+    return JSONEncoder.default(obj)
 
 
 def create_superuser(credentials):
@@ -139,23 +122,3 @@ def create_superuser(credentials):
     else:
         msg = 'Superuser already exists - %(email)s' % credentials
     return msg
-
-
-def create_thumbnails(pk, model, size_set, image_attr=None):
-    instance = model.objects.get(pk=pk)
-    if not image_attr:
-        image_attr = 'image'
-    image_instance = getattr(instance, image_attr)
-    if image_instance.name == '':
-        # There is no file, skip processing
-        return
-    warmer = VersatileImageFieldWarmer(
-        instance_or_queryset=instance,
-        rendition_key_set=size_set, image_attr=image_attr)
-    logger.info('Creating thumbnails for  %s', pk)
-    num_created, failed_to_create = warmer.warm()
-    if num_created:
-        logger.info('Created %d thumbnails', num_created)
-    if failed_to_create:
-        logger.error('Failed to generate thumbnails',
-                     extra={'paths': failed_to_create})

@@ -18,7 +18,8 @@ def validate_cart(view):
     def func(request, checkout, cart):
         if cart:
             return view(request, checkout)
-        return redirect('cart:index')
+        else:
+            return redirect('cart:index')
     return func
 
 
@@ -62,7 +63,7 @@ def validate_is_shipping_required(view):
 
     Expects to be decorated with `@validate_cart`.
 
-    If shipping is not needed redirects to the checkout summary.
+    If shipping is not needed redirects to the summary step.
     """
     @wraps(view)
     def func(request, checkout):

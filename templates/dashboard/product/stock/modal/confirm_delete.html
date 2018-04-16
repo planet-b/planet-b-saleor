@@ -16,11 +16,9 @@
 {% endblock title %}
 
 {% block content %}
-  <div class="col s12">
-    {% blocktrans context "Dashboard confirmation modal" %}
-      Are you sure you want to remove stock <strong>{{ stock }}</strong>?
-    {% endblocktrans %}
-  </div>
+{% blocktrans context "Dashboard confirmation modal" %}
+  Are you sure you want to remove stock <strong>{{ stock }}</strong>?
+{% endblocktrans %}
 {% endblock content %}
 
 {% block primary_action %}

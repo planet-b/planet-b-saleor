@@ -1,36 +1,37 @@
 import json
-from unittest.mock import MagicMock, Mock
 from uuid import uuid4
+from unittest.mock import MagicMock, Mock
 
-import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.core import signing
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.urls import reverse
 from django_babel.templatetags.babel import currencyfmt
-from prices import Money, TaxedMoney
+from prices import Price
+import pytest
+from satchless.item import InsufficientStock
 
 from saleor.cart import CartStatus, forms, utils
 from saleor.cart.context_processors import cart_counter
-from saleor.cart.models import Cart, find_open_cart_for_user
+from saleor.cart.models import Cart, ProductGroup, find_open_cart_for_user
 from saleor.cart.views import update
-from saleor.core.exceptions import InsufficientStock
 from saleor.discount.models import Sale
+from saleor.product.models import Category
 from saleor.shipping.utils import get_shipment_options
 
 
 @pytest.fixture()
 def cart_request_factory(rf, monkeypatch):
     def create_request(user=None, token=None):
-        request = rf.get(reverse('home'))
+        request = rf.get('/')
         if user is None:
             request.user = AnonymousUser()
         else:
             request.user = user
         request.discounts = Sale.objects.all()
-        monkeypatch.setattr(
-            request, 'get_signed_cookie', Mock(return_value=token))
+        monkeypatch.setattr(request, 'get_signed_cookie',
+                            Mock(return_value=token))
         return request
     return create_request
 
@@ -152,6 +153,8 @@ def test_get_user_cart(
 
     # test against getting closed carts
     Cart.objects.create(user=admin_user, status=CartStatus.CANCELED)
+    queryset = Cart.objects.all()
+    carts = list(queryset)
     cart = utils.get_user_cart(admin_user)
     assert Cart.objects.all().count() == 5
     assert cart is None
@@ -166,8 +169,8 @@ def test_get_or_create_cart_from_request(
     anonymous_cart = Cart()
     mock_get_for_user = Mock(return_value=user_cart)
     mock_get_for_anonymous = Mock(return_value=anonymous_cart)
-    monkeypatch.setattr(
-        'saleor.cart.utils.get_or_create_user_cart', mock_get_for_user)
+    monkeypatch.setattr('saleor.cart.utils.get_or_create_user_cart',
+                        mock_get_for_user)
     monkeypatch.setattr(
         'saleor.cart.utils.get_or_create_anonymous_cart_from_token',
         mock_get_for_anonymous)
@@ -188,8 +191,8 @@ def test_get_cart_from_request(
     request = cart_request_factory(user=customer_user, token=token)
     user_cart = Cart(user=customer_user)
     mock_get_for_user = Mock(return_value=user_cart)
-    monkeypatch.setattr(
-        'saleor.cart.utils.get_user_cart', mock_get_for_user)
+    monkeypatch.setattr('saleor.cart.utils.get_user_cart',
+                        mock_get_for_user)
     returned_cart = utils.get_cart_from_request(request, queryset)
     mock_get_for_user.assert_called_once_with(customer_user, queryset)
     assert returned_cart == user_cart
@@ -197,8 +200,8 @@ def test_get_cart_from_request(
     assert list(returned_cart.discounts) == list(request.discounts)
 
     mock_get_for_user = Mock(return_value=None)
-    monkeypatch.setattr(
-        'saleor.cart.utils.get_user_cart', mock_get_for_user)
+    monkeypatch.setattr('saleor.cart.utils.get_user_cart',
+                        mock_get_for_user)
     returned_cart = utils.get_cart_from_request(request, queryset)
     mock_get_for_user.assert_called_once_with(customer_user, queryset)
     assert not Cart.objects.filter(token=returned_cart.token).exists()
@@ -229,7 +232,7 @@ def test_find_and_assign_anonymous_cart(
     client.cookies[utils.COOKIE_NAME] = value
     # Anonymous logs in
     response = client.post(
-        reverse('account:login'),
+        reverse('account_login'),
         {'username': customer_user.email, 'password': 'password'}, follow=True)
     assert response.context['user'] == customer_user
     # User should have only one cart, the same as he had previously in
@@ -243,7 +246,7 @@ def test_find_and_assign_anonymous_cart(
 def test_login_without_a_cart(customer_user, client):
     assert utils.COOKIE_NAME not in client.cookies
     response = client.post(
-        reverse('account:login'),
+        reverse('account_login'),
         {'username': customer_user.email, 'password': 'password'}, follow=True)
     assert response.context['user'] == customer_user
     authenticated_user_carts = customer_user.carts.filter(
@@ -255,7 +258,7 @@ def test_login_with_incorrect_cookie_token(customer_user, client):
     value = signing.get_cookie_signer(salt=utils.COOKIE_NAME).sign('incorrect')
     client.cookies[utils.COOKIE_NAME] = value
     response = client.post(
-        reverse('account:login'),
+        reverse('account_login'),
         {'username': customer_user.email, 'password': 'password'}, follow=True)
     assert response.context['user'] == customer_user
     authenticated_user_carts = customer_user.carts.filter(
@@ -294,9 +297,10 @@ def test_adding_same_variant(cart, product_in_stock):
     variant = product_in_stock.variants.get()
     cart.add(variant, 1)
     cart.add(variant, 2)
+    price_total = 10 * 3
     assert len(cart) == 1
     assert cart.count() == {'total_quantity': 3}
-    assert cart.get_total().gross == Money(30, 'USD')
+    assert cart.get_total().gross == price_total
 
 
 def test_replacing_same_variant(cart, product_in_stock):
@@ -316,7 +320,8 @@ def test_adding_invalid_quantity(cart, product_in_stock):
 @pytest.mark.parametrize('create_line_data, get_line_data, lines_equal', [
     (None, None, True),
     ({'gift-wrap': True}, None, False),
-    ({'gift-wrap': True}, {'gift-wrap': True}, True)])
+    ({'gift-wrap': True}, {'gift-wrap': True}, True)
+])
 def test_getting_line(
         create_line_data, get_line_data, lines_equal, cart, product_in_stock):
     variant = product_in_stock.variants.get()
@@ -505,14 +510,14 @@ def test_replace_cartline_form_when_insufficient_stock(
 
 
 def test_view_empty_cart(client, request_cart):
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     assert response.status_code == 200
 
 
 def test_view_cart(client, sale, product_in_stock, request_cart):
     variant = product_in_stock.variants.get()
     request_cart.add(variant, 1)
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     response_cart_line = response.context[0]['cart_lines'][0]
     cart_line = request_cart.lines.first()
     assert not response_cart_line['get_total'] == cart_line.get_total()
@@ -524,8 +529,9 @@ def test_view_update_cart_quantity(
     variant = product_in_stock.variants.get()
     request_cart.add(variant, 1)
     response = client.post(
-        reverse('cart:update-line', kwargs={'variant_id': variant.pk}),
-        data={'quantity': 3}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        '/cart/update/%s/' % (variant.pk,),
+        {'quantity': 3},
+        HTTP_X_REQUESTED_WITH='XMLHttpRequest')
     assert response.status_code == 200
     assert request_cart.quantity == 3
 
@@ -534,8 +540,9 @@ def test_view_invalid_update_cart(client, product_in_stock, request_cart):
     variant = product_in_stock.variants.get()
     request_cart.add(variant, 1)
     response = client.post(
-        reverse('cart:update-line', kwargs={'variant_id': variant.pk}),
-        data={}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        '/cart/update/%s/' % (variant.pk,),
+        {},
+        HTTP_X_REQUESTED_WITH='XMLHttpRequest')
     resp_decoded = json.loads(response.content.decode('utf-8'))
     assert response.status_code == 400
     assert 'error' in resp_decoded.keys()
@@ -547,7 +554,7 @@ def test_cart_page_without_openexchagerates(
     settings.OPENEXCHANGERATES_API_KEY = None
     variant = product_in_stock.variants.get()
     request_cart.add(variant, 1)
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     context = response.context
     assert context['local_cart_total'] is None
 
@@ -558,13 +565,13 @@ def test_cart_page_with_openexchagerates(
     settings.OPENEXCHANGERATES_API_KEY = 'fake-key'
     variant = product_in_stock.variants.get()
     request_cart.add(variant, 1)
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     context = response.context
     assert context['local_cart_total'] is None
     monkeypatch.setattr(
         'django_prices_openexchangerates.models.get_rates',
         lambda c: {'PLN': Mock(rate=2)})
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     context = response.context
     assert context['local_cart_total'].currency == 'PLN'
 
@@ -572,13 +579,13 @@ def test_cart_page_with_openexchagerates(
 def test_cart_summary_page(client, product_in_stock, request_cart):
     variant = product_in_stock.variants.get()
     request_cart.add(variant, 1)
-    response = client.get(reverse('cart:cart-summary'))
+    response = client.get('/cart/summary/')
     assert response.status_code == 200
     content = response.context
     assert content['quantity'] == request_cart.quantity
     cart_total = request_cart.get_total()
     assert content['total'] == currencyfmt(
-        cart_total.gross.amount, cart_total.currency)
+        cart_total.gross, cart_total.currency)
     assert len(content['lines']) == 1
     cart_line = content['lines'][0]
     assert cart_line['variant'] == variant.name
@@ -586,7 +593,7 @@ def test_cart_summary_page(client, product_in_stock, request_cart):
 
 
 def test_cart_summary_page_empty_cart(client, request_cart):
-    response = client.get(reverse('cart:cart-summary'))
+    response = client.get('/cart/summary/')
     assert response.status_code == 200
     data = response.context
     assert data['quantity'] == 0
@@ -597,12 +604,38 @@ def test_total_with_discount(client, sale, request_cart, product_in_stock):
     variant = product_in_stock.variants.get()
     request_cart.add(variant, 1)
     line = request_cart.lines.first()
-    assert line.get_total(discounts=sales) == TaxedMoney(
-        net=Money(5, 'USD'), gross=Money(5, 'USD'))
+    assert line.get_total(discounts=sales) == Price(currency="USD", net=5)
+
+
+def test_product_group():
+    group = ProductGroup([
+        Mock(is_shipping_required=Mock(return_value=False)),
+        Mock(is_shipping_required=Mock(return_value=False))])
+    assert not group.is_shipping_required()
+    group = ProductGroup([
+        Mock(is_shipping_required=Mock(return_value=True)),
+        Mock(is_shipping_required=Mock(return_value=False))])
+    assert group.is_shipping_required()
 
 
 def test_cart_queryset(customer_user):
+    saved_cart = Cart.objects.create(status=CartStatus.SAVED)
+    waiting_cart = Cart.objects.create(status=CartStatus.WAITING_FOR_PAYMENT)
+    checkout_cart = Cart.objects.create(status=CartStatus.CHECKOUT)
     canceled_cart = Cart.objects.create(status=CartStatus.CANCELED)
+
+    anonymous_carts = Cart.objects.anonymous()
+    assert anonymous_carts.filter(pk=saved_cart.pk).exists()
+
+    saved = Cart.objects.saved()
+    assert saved.filter(pk=saved_cart.pk).exists()
+
+    waiting_for_payment = Cart.objects.waiting_for_payment()
+    assert waiting_for_payment.filter(pk=waiting_cart.pk).exists()
+
+    checkout = Cart.objects.checkout()
+    assert checkout.filter(pk=checkout_cart.pk).exists()
+
     canceled = Cart.objects.canceled()
     assert canceled.filter(pk=canceled_cart.pk).exists()
 
@@ -666,14 +699,18 @@ def test_cart_line_state(product_in_stock, request_cart_with_item):
 
 def test_get_category_variants_and_prices(
         default_category, product_in_stock, request_cart_with_item):
-    result = list(utils.get_category_variants_and_prices(
-        request_cart_with_item, default_category))
     variant = product_in_stock.variants.get()
+    top_category = Category.objects.create(name='foo', slug='bar')
+    product_in_stock.categories.add(top_category)
+    default_category.parent = top_category
+    default_category.save()
+    result = list(utils.get_category_variants_and_prices(
+        request_cart_with_item, top_category))
     assert result[0][0] == variant
 
 
 def test_update_view_must_be_ajax(customer_user, rf):
-    request = rf.post(reverse('home'))
+    request = rf.post('/')
     request.user = customer_user
     request.discounts = None
     result = update(request, 1)
@@ -686,7 +723,7 @@ def test_get_or_create_db_cart(customer_user, db, rf):
 
     decorated_view = utils.get_or_create_db_cart()(view)
     assert Cart.objects.filter(user=customer_user).count() == 0
-    request = rf.get(reverse('home'))
+    request = rf.get('/')
     request.user = customer_user
     decorated_view(request)
     assert Cart.objects.filter(user=customer_user).count() == 1
@@ -700,10 +737,9 @@ def test_get_cart_data(request_cart_with_item, shipping_method):
     shipment_option = get_shipment_options('PL')
     cart_data = utils.get_cart_data(
         request_cart_with_item, shipment_option, 'USD', None)
-    assert cart_data['cart_total'] == TaxedMoney(
-        net=Money(10, 'USD'), gross=Money(10, 'USD'))
-    assert cart_data['total_with_shipping'].start == TaxedMoney(
-        net=Money(20, 'USD'), gross=Money(20, 'USD'))
+    assert cart_data['cart_total'] == Price(net=10, currency='USD')
+    assert cart_data['total_with_shipping'].min_price == Price(
+        net=20, currency='USD')
 
 
 def test_get_cart_data_no_shipping(request_cart_with_item):
@@ -711,6 +747,5 @@ def test_get_cart_data_no_shipping(request_cart_with_item):
     cart_data = utils.get_cart_data(
         request_cart_with_item, shipment_option, 'USD', None)
     cart_total = cart_data['cart_total']
-    assert cart_total == TaxedMoney(
-        net=Money(10, 'USD'), gross=Money(10, 'USD'))
-    assert cart_data['total_with_shipping'].start == cart_total
+    assert cart_total == Price(net=10, currency='USD')
+    assert cart_data['total_with_shipping'].min_price == cart_total

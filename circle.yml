@@ -2,7 +2,7 @@ machine:
   node:
     version: "8.7.0"
   python:
-    version: "3.6.2"
+    version: "3.5.1"
   environment:
     DATABASE_URL: postgres://ubuntu:@127.0.0.1:5432/circle_test
     DJANGO_SETTINGS_MODULE: saleor.settings
@@ -14,8 +14,6 @@ machine:
 dependencies:
   pre:
     - npm install
-    - npm run build-emails
-    - pip install -U pip
     - pip install -r requirements.txt
   override:
     - npm run build-assets --production

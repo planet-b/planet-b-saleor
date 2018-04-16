@@ -1,5 +1,3 @@
-import datetime
-
 from django.template import Library
 from payments import PaymentStatus
 
@@ -32,15 +30,6 @@ def render_status(status, status_display=None):
 
 
 @register.inclusion_tag('status_label.html')
-def render_order_status(status, status_display=None):
-    if status == OrderStatus.FULFILLED:
-        label_cls = LABEL_SUCCESS
-    else:
-        label_cls = LABEL_DEFAULT
-    return {'label_cls': label_cls, 'status': status_display or status}
-
-
-@register.inclusion_tag('status_label.html')
 def render_availability_status(product):
     status = get_product_availability_status(product)
     display = ProductAvailabilityStatus.get_display(status)
@@ -60,16 +49,3 @@ def render_variant_availability_status(variant):
     else:
         label_cls = LABEL_DANGER
     return {'status': display, 'label_cls': label_cls}
-
-
-@register.inclusion_tag('dashboard/includes/_page_availability.html')
-def render_page_availability(page):
-    today = datetime.date.today()
-    is_published = (
-        page.is_visible and (
-            page.available_on is None or page.available_on <= today))
-    ctx = {'is_published': is_published, 'page': page}
-    if is_published:
-        label_cls = LABEL_SUCCESS
-        ctx.update({'label_cls': label_cls})
-    return ctx

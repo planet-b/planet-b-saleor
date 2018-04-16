@@ -1,9 +1,6 @@
 engines:
   eslint:
     enabled: true
-  isort:
-    enabled: true
-    channel: beta
   pep8:
     enabled: true
   pylint:
@@ -13,13 +10,10 @@ engines:
     config:
       languages:
         python:
-          mass_threshold: 100
+          mass_threshold: 100 
           python_version: 3
 exclude_patterns:
-- ".*"
-- "**/__pycache__/"
 - "**/migrations/"
-- "node_modules/"
 - "tests/"
 - "**/test_*"
 ratings:

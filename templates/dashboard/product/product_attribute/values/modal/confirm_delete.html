@@ -15,11 +15,9 @@ Delete attribute choice value {{ value }}
 {% endblock title %}
 
 {% block content %}
-  <div class="col s12">
-    {% blocktrans trimmed context "Modal delete attribute text" %}
-      Are you sure you want to remove attribute choice value <strong>{{ value }}</strong>?
-    {% endblocktrans %}
-  </div>
+{% blocktrans trimmed context "Modal delete attribute text" %}
+  Are you sure you want to remove attribute choice value <strong>{{ value }}</strong>?
+{% endblocktrans %}
 {% endblock content %}
 
 {% block primary_action %}

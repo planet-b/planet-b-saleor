@@ -1,7 +1,9 @@
 import { observer } from 'mobx-react';
 import React, { Component, PropTypes } from 'react';
 
-export default observer(class VariantPrice extends Component {
+@observer
+export default class VariantPrice extends Component {
+
   static propTypes = {
     availability: PropTypes.object.isRequired,
     store: PropTypes.object
@@ -31,14 +33,14 @@ export default observer(class VariantPrice extends Component {
     }
     return (
       <h2 className="product__info__price">
-        <span>{priceText}&nbsp;</span>
-        {isDiscount && (
-          <small className="product__info__price__undiscounted">{priceUndiscountedText}</small>
-        )}
-        {priceLocalCurrency && (
-          <p><small className="text-info">&asymp; {priceLocalCurrency}</small></p>
-        )}
+          <span>{priceText}&nbsp;</span>
+          {isDiscount && (
+            <small className="product__info__price__undiscounted">{priceUndiscountedText}</small>
+          )}
+          {priceLocalCurrency && (
+            <p><small className="text-info">&asymp; {priceLocalCurrency}</small></p>
+          )}
       </h2>
     );
   }
-});
+}
