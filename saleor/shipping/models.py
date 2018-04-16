@@ -4,13 +4,10 @@ from operator import itemgetter
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
-from django.utils.safestring import mark_safe
 from django.utils.translation import pgettext_lazy
 from django_countries import countries
-from django_prices.models import MoneyField
-from prices import TaxedMoney, TaxedMoneyRange
-
-from ..core.utils import format_money
+from django_prices.models import PriceField
+from prices import PriceRange
 
 ANY_COUNTRY = ''
 ANY_COUNTRY_DISPLAY = pgettext_lazy('Country choice', 'Rest of World')
@@ -19,8 +16,12 @@ COUNTRY_CODE_CHOICES = [(ANY_COUNTRY, ANY_COUNTRY_DISPLAY)] + list(countries)
 
 class ShippingMethod(models.Model):
 
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, default='')
+    name = models.CharField(
+        pgettext_lazy('Shipping method field', 'name'),
+        max_length=100)
+    description = models.TextField(
+        pgettext_lazy('Shipping method field', 'description'),
+        blank=True, default='')
 
     class Meta:
         permissions = (
@@ -40,12 +41,9 @@ class ShippingMethod(models.Model):
 
     @property
     def price_range(self):
-        prices = [
-            country.get_total_price()
-            for country in self.price_per_country.all()]
+        prices = [country.price for country in self.price_per_country.all()]
         if prices:
-            return TaxedMoneyRange(min(prices), max(prices))
-        return None
+            return PriceRange(min(prices), max(prices))
 
 
 class ShippingMethodCountryQueryset(models.QuerySet):
@@ -78,12 +76,16 @@ class ShippingMethodCountryQueryset(models.QuerySet):
 class ShippingMethodCountry(models.Model):
 
     country_code = models.CharField(
+        pgettext_lazy('Shipping method country field', 'country code'),
         choices=COUNTRY_CODE_CHOICES, max_length=2, blank=True,
         default=ANY_COUNTRY)
-    price = MoneyField(
+    price = PriceField(
+        pgettext_lazy('Shipping method country field', 'price'),
         currency=settings.DEFAULT_CURRENCY, max_digits=12, decimal_places=2)
     shipping_method = models.ForeignKey(
         ShippingMethod, related_name='price_per_country',
+        verbose_name=pgettext_lazy(
+            'Shipping method country field', 'shipping method'),
         on_delete=models.CASCADE)
 
     objects = ShippingMethodCountryQueryset.as_manager()
@@ -96,11 +98,5 @@ class ShippingMethodCountry(models.Model):
         return '%s %s' % (
             self.shipping_method, self.get_country_code_display())
 
-    def get_total_price(self):
-        return TaxedMoney(net=self.price, gross=self.price)
-
-    @property
-    def ajax_label(self):
-        price_html = format_money(self.price)
-        label = mark_safe('%s %s' % (self.shipping_method, price_html))
-        return label
+    def get_total(self):
+        return self.price

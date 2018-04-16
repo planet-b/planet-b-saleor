@@ -1,0 +1,27 @@
+{% extends "dashboard/base_modal.html" %}
+
+{% load i18n %}
+{% load materializecss %}
+
+
+{% block action_url %}
+{% url 'dashboard:order-remove-voucher' order_pk=order.pk %}
+{% endblock %}
+
+{% block title %}
+{% trans "Remove voucher" context "Modal remove voucher from order title" %}
+{% endblock %}
+
+{% block content %}
+{% blocktrans trimmed with order=order context "Modal remove voucher from order text" %}
+  Are you sure you want remove voucher discount from order {{ order }}?
+{% endblocktrans %}
+{% endblock %}
+
+{% block cancel_action %}
+{% trans "Abort" context "Dashboard abort action" %}
+{% endblock %}
+
+{% block primary_action %}
+{% trans "Remove voucher" context "Modal remove voucher from order primary action" %}
+{% endblock %}

@@ -1,11 +1,10 @@
-from decimal import Decimal
-
-import pytest
-from django.urls import reverse
-
-from saleor.account.models import Address, User
-from saleor.order.models import Order
 from saleor.product.models import Product
+from saleor.order.models import Order
+from saleor.userprofile.models import Address, User
+
+from django.core.urlresolvers import reverse
+from decimal import Decimal
+import pytest
 
 
 @pytest.fixture(scope='function', autouse=True)
@@ -20,20 +19,20 @@ PRODUCTS = [('Arabica Coffee', 'The best grains in galactic'),
 
 
 @pytest.fixture
-def named_products(default_category, product_type):
+def named_products(default_category, product_class):
     def gen_product(name, description):
         product = Product.objects.create(
             name=name,
             description=description,
             price=Decimal(6.6),
-            product_type=product_type,
-            category=default_category)
+            product_class=product_class)
+        product.categories.add(default_category)
         return product
     return [gen_product(name, desc) for name, desc in PRODUCTS]
 
 
 def search_storefront(client, phrase):
-    """Execute storefront search on client matching phrase."""
+    '''Execute storefront search on client mathing phrase'''
     resp = client.get(reverse('search:search'), {'q': phrase})
     return [prod for prod, _ in resp.context['results'].object_list]
 
@@ -65,7 +64,7 @@ def test_storefront_filter_published_products(client, named_products):
 
 
 def search_dashboard(client, phrase):
-    """Execute dashboard search on client matching phrase."""
+    '''Execute dashboard search on client mathing phrase'''
     response = client.get(reverse('dashboard:search'), {'q': phrase})
     assert response.context['query'] in phrase
     context = response.context
@@ -110,13 +109,13 @@ ORDERS = [[pk] + list(user) for pk, user in zip(ORDER_IDS, USERS)]
 
 def gen_address_for_user(first_name, last_name):
     return Address.objects.create(
-        first_name=first_name,
-        last_name=last_name,
-        company_name='Mirumee Software',
-        street_address_1='Tęczowa 7',
-        city='Wrocław',
-        postal_code='53-601',
-        country='PL')
+            first_name=first_name,
+            last_name=last_name,
+            company_name='Mirumee Software',
+            street_address_1='Tęczowa 7',
+            city='Wrocław',
+            postal_code='53-601',
+            country='PL')
 
 
 @pytest.fixture
@@ -227,7 +226,7 @@ def test_find_user_by_name(admin_client, users_with_addresses, phrase,
 
 
 USER_PHRASE_WITH_RESULT = 'adreas.knop@example.com'
-USER_RESULTS_PERMISSION = 'account.view_user'
+USER_RESULTS_PERMISSION = 'userprofile.view_user'
 
 
 @pytest.mark.integration

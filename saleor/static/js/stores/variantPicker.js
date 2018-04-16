@@ -1,17 +1,14 @@
-import { extendObservable } from 'mobx';
+import { computed, observable } from 'mobx';
 
 class VariantPickerStore {
-  constructor() {
-    extendObservable(this, {
-      variant: {},
-      get isEmpty() {
-        return !this.variant.id;
-      }
-    });
-  }
+  @observable variant = {}
 
   setVariant(variant) {
     this.variant = variant || {};
+  }
+
+  @computed get isEmpty() {
+    return !this.variant.id;
   }
 }
 

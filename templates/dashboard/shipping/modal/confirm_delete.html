@@ -17,11 +17,9 @@ Remove shipping method {{ shipping_method }}
 {% endblock %}
 
 {% block content %}
-  <div class="col s12">
-    {% blocktrans context "Dashboard confirmation modal" %}
-      Are you sure you want to remove shipping method <strong>{{ shipping_method}}</strong>?
-    {% endblocktrans %}
-  </div>
+{% blocktrans context "Dashboard confirmation modal" %}
+Are you sure you want to remove shipping method <strong>{{ shipping_method}}</strong>?
+{% endblocktrans %}
 {% endblock %}
 
 {% block primary_action %}

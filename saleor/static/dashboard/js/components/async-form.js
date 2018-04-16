@@ -1,27 +1,20 @@
-import { initSelects } from './selects';
+import {initSelects} from './utils';
 
-const onAsyncFormSubmit = (e) => {
-  const $target = $(e.currentTarget);
-  let $action = $target.attr('action');
-  const $submitButton = $target.find('button[type=submit][clicked=true]');
-  const $formAction = $submitButton.attr('formaction');
-  if (typeof $formAction !== typeof undefined && $formAction !== false) {
-    $action = $formAction;
-  }
+export default $(document).on('submit', '.form-async', function (e) {
+  let that = this;
   $.ajax({
-    url: $action,
-    method: 'POST',
-    data: $target.serialize(),
-    complete: (response) => {
-      // Write HTML if got 400 response, otherwise pretend nothing happened
+    url: $(that).attr('action'),
+    method: 'post',
+    data: $(that).serialize(),
+    complete: function (response) {
       if (response.status === 400) {
-        $target.parent().html(response.responseText);
+        $(that).parent().html(response.responseText);
         initSelects();
       } else {
         $('.modal-close').click();
       }
     },
-    success: (response) => {
+    success: function (response) {
       if (response.redirectUrl) {
         window.location.href = response.redirectUrl;
       } else {
@@ -30,20 +23,6 @@ const onAsyncFormSubmit = (e) => {
     }
   });
   e.preventDefault();
-};
-
-const onAsyncFormButtonClick = (e) => {
-  const $button = $(e.currentTarget);
-  const $formAsync = $button.parents('.form-async');
-  $('button[type=submit]', $formAsync).removeAttr('clicked');
-  $button.attr('clicked', 'true');
-};
-
-const onModalClose = () => $('.modal').modal('close');
-
-// -----
-
-$(document)
-  .on('click', '.form-async button[type=submit]', onAsyncFormButtonClick)
-  .on('submit', '.form-async', onAsyncFormSubmit)
-  .on('click', '.modal-close', onModalClose);
+}).on('click', '.modal-close', function () {
+  $('.modal').modal('close');
+});

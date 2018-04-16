@@ -1,30 +1,27 @@
 import datetime
 import json
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
-
 from django.urls import reverse
+from django.utils.encoding import smart_text
+from tests.utils import filter_products_by_attribute
+
 from saleor.cart import CartStatus, utils
 from saleor.cart.models import Cart
 from saleor.product import (
     ProductAvailabilityStatus, VariantAvailabilityStatus, models)
-from saleor.product.models import Category, ProductImage
-from saleor.product.thumbnails import create_product_thumbnails
 from saleor.product.utils import (
-    allocate_stock, deallocate_stock, decrease_stock,
     get_attributes_display_map, get_availability,
     get_product_availability_status, get_variant_availability_status,
-    get_variant_picker_data, increase_stock)
-
-from .utils import filter_products_by_attribute
+    get_variant_picker_data)
 
 
 @pytest.fixture()
-def product_with_no_attributes(product_type, default_category):
+def product_with_no_attributes(product_class):
     product = models.Product.objects.create(
-        name='Test product', price='10.00', product_type=product_type,
-        category=default_category)
+        name='Test product', price='10.00',
+        product_class=product_class)
     return product
 
 
@@ -34,24 +31,13 @@ def test_stock_selector(product_in_stock):
     assert preferred_stock.quantity_available >= 5
 
 
-def test_allocate_stock(product_in_stock):
+def test_stock_allocator(product_in_stock):
     variant = product_in_stock.variants.get()
     stock = variant.select_stockrecord(5)
     assert stock.quantity_allocated == 0
-    allocate_stock(stock, 1)
-    stock.refresh_from_db()
+    models.Stock.objects.allocate_stock(stock, 1)
+    stock = models.Stock.objects.get(pk=stock.pk)
     assert stock.quantity_allocated == 1
-
-
-def test_deallocate_stock(product_in_stock):
-    stock = product_in_stock.variants.first().stock.first()
-    stock.quantity = 100
-    stock.quantity_allocated = 80
-    stock.save()
-    deallocate_stock(stock, 50)
-    stock.refresh_from_db()
-    assert stock.quantity == 100
-    assert stock.quantity_allocated == 30
 
 
 def test_decrease_stock(product_in_stock):
@@ -59,21 +45,21 @@ def test_decrease_stock(product_in_stock):
     stock.quantity = 100
     stock.quantity_allocated = 80
     stock.save()
-    decrease_stock(stock, 50)
+    models.Stock.objects.decrease_stock(stock, 50)
     stock.refresh_from_db()
     assert stock.quantity == 50
     assert stock.quantity_allocated == 30
 
 
-def test_increase_stock(product_in_stock):
+def test_deallocate_stock(product_in_stock):
     stock = product_in_stock.variants.first().stock.first()
     stock.quantity = 100
     stock.quantity_allocated = 80
     stock.save()
-    increase_stock(stock, 50)
+    models.Stock.objects.deallocate_stock(stock, 50)
     stock.refresh_from_db()
-    assert stock.quantity == 150
-    assert stock.quantity_allocated == 80
+    assert stock.quantity == 100
+    assert stock.quantity_allocated == 30
 
 
 def test_product_page_redirects_to_correct_slug(client, product_in_stock):
@@ -107,47 +93,31 @@ def test_availability(product_in_stock, monkeypatch, settings):
     settings.DEFAULT_COUNTRY = 'PL'
     settings.OPENEXCHANGERATES_API_KEY = 'fake-key'
     availability = get_availability(product_in_stock, local_currency='PLN')
-    assert availability.price_range_local_currency.start.currency == 'PLN'
+    assert availability.price_range_local_currency.min_price.currency == 'PLN'
     assert availability.available
 
 
-def test_available_products_only_published(product_list):
-    available_products = models.Product.objects.available_products()
-    assert available_products.count() == 2
-    assert all([product.is_published for product in available_products])
-
-
-def test_available_products_only_available(product_list):
-    product = product_list[0]
-    date_tomorrow = datetime.date.today() + datetime.timedelta(days=1)
-    product.available_on = date_tomorrow
-    product.save()
-    available_products = models.Product.objects.available_products()
-    assert available_products.count() == 1
-    assert all([product.is_available() for product in available_products])
-
-
-def test_filtering_by_attribute(db, color_attribute, default_category):
-    product_type_a = models.ProductType.objects.create(
+def test_filtering_by_attribute(db, color_attribute):
+    product_class_a = models.ProductClass.objects.create(
         name='New class', has_variants=True)
-    product_type_a.product_attributes.add(color_attribute)
-    product_type_b = models.ProductType.objects.create(
-        name='New class', has_variants=True)
-    product_type_b.variant_attributes.add(color_attribute)
+    product_class_a.product_attributes.add(color_attribute)
+    product_class_b = models.ProductClass.objects.create(name='New class',
+                                                         has_variants=True)
+    product_class_b.variant_attributes.add(color_attribute)
     product_a = models.Product.objects.create(
-        name='Test product a', price=10, product_type=product_type_a,
-        category=default_category)
+        name='Test product a', price=10,
+        product_class=product_class_a)
     models.ProductVariant.objects.create(product=product_a, sku='1234')
     product_b = models.Product.objects.create(
-        name='Test product b', price=10, product_type=product_type_b,
-        category=default_category)
+        name='Test product b', price=10,
+        product_class=product_class_b)
     variant_b = models.ProductVariant.objects.create(product=product_b,
                                                      sku='12345')
     color = color_attribute.values.first()
     color_2 = color_attribute.values.last()
-    product_a.attributes[str(color_attribute.pk)] = str(color.pk)
+    product_a.set_attribute(color_attribute.pk, color.pk)
     product_a.save()
-    variant_b.attributes[str(color_attribute.pk)] = str(color.pk)
+    variant_b.set_attribute(color_attribute.pk, color.pk)
     variant_b.save()
 
     filtered = filter_products_by_attribute(models.Product.objects.all(),
@@ -155,7 +125,7 @@ def test_filtering_by_attribute(db, color_attribute, default_category):
     assert product_a in list(filtered)
     assert product_b in list(filtered)
 
-    product_a.attributes[str(color_attribute.pk)] = str(color_2.pk)
+    product_a.set_attribute(color_attribute.pk, color_2.pk)
     product_a.save()
     filtered = filter_products_by_attribute(models.Product.objects.all(),
                                             color_attribute.pk, color.pk)
@@ -202,7 +172,7 @@ def test_adding_to_cart_with_current_user_token(
     variant = product_in_stock.variants.first()
     cart.add(variant, 1)
 
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     utils.set_cart_cookie(cart, response)
     client.cookies[key] = response.cookies[key]
 
@@ -224,7 +194,7 @@ def test_adding_to_cart_with_another_user_token(
     variant = product_in_stock.variants.first()
     cart.add(variant, 1)
 
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     utils.set_cart_cookie(cart, response)
     client.cookies[key] = response.cookies[key]
 
@@ -245,7 +215,7 @@ def test_anonymous_adding_to_cart_with_another_user_token(
     variant = product_in_stock.variants.first()
     cart.add(variant, 1)
 
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     utils.set_cart_cookie(cart, response)
     client.cookies[key] = response.cookies[key]
 
@@ -268,7 +238,7 @@ def test_adding_to_cart_with_deleted_cart_token(
     variant = product_in_stock.variants.first()
     cart.add(variant, 1)
 
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     utils.set_cart_cookie(cart, response)
     client.cookies[key] = response.cookies[key]
     cart.delete()
@@ -290,8 +260,9 @@ def test_adding_to_cart_with_closed_cart_token(
     cart = Cart.objects.create(user=admin_user)
     variant = product_in_stock.variants.first()
     cart.add(variant, 1)
+    cart.change_status(CartStatus.ORDERED)
 
-    response = client.get(reverse('cart:index'))
+    response = client.get('/cart/')
     utils.set_cart_cookie(cart, response)
     client.cookies[key] = response.cookies[key]
 
@@ -303,14 +274,16 @@ def test_adding_to_cart_with_closed_cart_token(
 
     assert Cart.objects.filter(
         user=admin_user, status=CartStatus.OPEN).count() == 1
+    assert Cart.objects.filter(
+        user=admin_user, status=CartStatus.ORDERED).count() == 1
 
 
 def test_get_attributes_display_map(product_in_stock):
-    attributes = product_in_stock.product_type.product_attributes.all()
+    attributes = product_in_stock.product_class.product_attributes.all()
     attributes_display_map = get_attributes_display_map(
         product_in_stock, attributes)
 
-    product_attr = product_in_stock.product_type.product_attributes.first()
+    product_attr = product_in_stock.product_class.product_attributes.first()
     attr_value = product_attr.values.first()
 
     assert len(attributes_display_map) == 1
@@ -319,25 +292,25 @@ def test_get_attributes_display_map(product_in_stock):
 
 def test_get_attributes_display_map_empty(product_with_no_attributes):
     product = product_with_no_attributes
-    attributes = product.product_type.product_attributes.all()
+    attributes = product.product_class.product_attributes.all()
 
     assert get_attributes_display_map(product, attributes) == {}
 
 
 def test_get_attributes_display_map_no_choices(product_in_stock):
-    attributes = product_in_stock.product_type.product_attributes.all()
+    attributes = product_in_stock.product_class.product_attributes.all()
     product_attr = attributes.first()
 
-    product_in_stock.attributes[str(product_attr.pk)] = '-1'
+    product_in_stock.set_attribute(product_attr.pk, -1)
     attributes_display_map = get_attributes_display_map(
         product_in_stock, attributes)
 
-    assert attributes_display_map == {product_attr.pk: '-1'}
+    assert attributes_display_map == {product_attr.pk: smart_text(-1)}
 
 
 def test_product_availability_status(unavailable_product):
     product = unavailable_product
-    product.product_type.has_variants = True
+    product.product_class.has_variants = True
 
     # product is not published
     status = get_product_availability_status(product)
@@ -383,7 +356,7 @@ def test_product_availability_status(unavailable_product):
 
 def test_variant_availability_status(unavailable_product):
     product = unavailable_product
-    product.product_type.has_variants = True
+    product.product_class.has_variants = True
 
     variant = product.variants.create(sku='test')
     status = get_variant_availability_status(variant)
@@ -401,8 +374,9 @@ def test_variant_availability_status(unavailable_product):
 
 def test_product_filter_before_filtering(
         authorized_client, product_in_stock, default_category):
-    products = models.Product.objects.all().filter(
-        category__name=default_category).order_by('-price')
+    products = (models.Product.objects.all()
+                .filter(categories__name=default_category)
+                .order_by('-price'))
     url = reverse(
         'product:category', kwargs={'path': default_category.slug,
                                     'category_id': default_category.pk})
@@ -412,13 +386,12 @@ def test_product_filter_before_filtering(
 
 def test_product_filter_product_exists(authorized_client, product_in_stock,
                                        default_category):
-    products = (
-        models.Product.objects.all()
-        .filter(category__name=default_category)
-        .order_by('-price'))
+    products = (models.Product.objects.all()
+                .filter(categories__name=default_category)
+                .order_by('-price'))
     url = reverse(
-        'product:category', kwargs={
-            'path': default_category.slug, 'category_id': default_category.pk})
+        'product:category', kwargs={'path': default_category.slug,
+                                    'category_id': default_category.pk})
     data = {'price_0': [''], 'price_1': ['20']}
     response = authorized_client.get(url, data)
     assert list(response.context['filter_set'].qs) == list(products)
@@ -427,8 +400,8 @@ def test_product_filter_product_exists(authorized_client, product_in_stock,
 def test_product_filter_product_does_not_exist(
         authorized_client, product_in_stock, default_category):
     url = reverse(
-        'product:category', kwargs={
-            'path': default_category.slug, 'category_id': default_category.pk})
+        'product:category', kwargs={'path': default_category.slug,
+                                    'category_id': default_category.pk})
     data = {'price_0': ['20'], 'price_1': ['']}
     response = authorized_client.get(url, data)
     assert not list(response.context['filter_set'].qs)
@@ -436,13 +409,12 @@ def test_product_filter_product_does_not_exist(
 
 def test_product_filter_form(authorized_client, product_in_stock,
                              default_category):
-    products = (
-        models.Product.objects.all()
-        .filter(category__name=default_category)
-        .order_by('-price'))
+    products = (models.Product.objects.all()
+                .filter(categories__name=default_category)
+                .order_by('-price'))
     url = reverse(
-        'product:category', kwargs={
-            'path': default_category.slug, 'category_id': default_category.pk})
+        'product:category', kwargs={'path': default_category.slug,
+                                    'category_id': default_category.pk})
     response = authorized_client.get(url)
     assert 'price' in response.context['filter_set'].form.fields.keys()
     assert 'sort_by' in response.context['filter_set'].form.fields.keys()
@@ -450,14 +422,13 @@ def test_product_filter_form(authorized_client, product_in_stock,
 
 
 def test_product_filter_sorted_by_price_descending(
-        authorized_client, product_list, default_category):
-    products = (
-        models.Product.objects.all()
-        .filter(category__name=default_category, is_published=True)
-        .order_by('-price'))
+    authorized_client, product_list, default_category):
+    products = (models.Product.objects.all()
+                .filter(categories__name=default_category, is_published=True)
+                .order_by('-price'))
     url = reverse(
-        'product:category', kwargs={
-            'path': default_category.slug, 'category_id': default_category.pk})
+        'product:category', kwargs={'path': default_category.slug,
+                                    'category_id': default_category.pk})
     data = {'sort_by': '-price'}
     response = authorized_client.get(url, data)
     assert list(response.context['filter_set'].qs) == list(products)
@@ -466,14 +437,19 @@ def test_product_filter_sorted_by_price_descending(
 def test_product_filter_sorted_by_wrong_parameter(
         authorized_client, product_in_stock, default_category):
     url = reverse(
-        'product:category', kwargs={
-            'path': default_category.slug, 'category_id': default_category.pk})
+        'product:category', kwargs={'path': default_category.slug,
+                                    'category_id': default_category.pk})
     data = {'sort_by': 'aaa'}
     response = authorized_client.get(url, data)
     assert not list(response.context['filter_set'].qs)
 
 
 def test_get_variant_picker_data_proper_variant_count(product_in_stock):
+    """
+    test checks if get_variant_picker_data provide proper count of
+    variant information from available product variants and not count
+    of variant attributes from product class
+    """
     data = get_variant_picker_data(
         product_in_stock, discounts=None, local_currency=None)
 
@@ -482,63 +458,24 @@ def test_get_variant_picker_data_proper_variant_count(product_in_stock):
 
 def test_view_ajax_available_variants_list(admin_client, product_in_stock):
     variant = product_in_stock.variants.first()
-    variant_list = [
-        {'id': variant.pk, 'text': '123, Test product (Size: Small), $10.00'}]
+    variants_list = [
+        {'id': variant.pk, 'text': '123, Test product (Size: Small), $10.00'}
+    ]
 
     url = reverse('dashboard:ajax-available-variants')
     response = admin_client.get(url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
     resp_decoded = json.loads(response.content.decode('utf-8'))
 
     assert response.status_code == 200
-    assert resp_decoded == {'results': variant_list}
+    assert resp_decoded == {'results': variants_list}
 
 
 def test_view_ajax_available_products_list(admin_client, product_in_stock):
-    product_list = [{'id': product_in_stock.pk, 'text': 'Test product'}]
+    products_list = [{'id': product_in_stock.pk, 'text': 'Test product'}]
 
     url = reverse('dashboard:ajax-products')
     response = admin_client.get(url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
     resp_decoded = json.loads(response.content.decode('utf-8'))
 
     assert response.status_code == 200
-    assert resp_decoded == {'results': product_list}
-
-
-def test_render_product_page_with_no_variant(
-        unavailable_product, admin_client):
-    product = unavailable_product
-    product.is_published = True
-    product.product_type.has_variants = True
-    product.save()
-    status = get_product_availability_status(product)
-    assert status == ProductAvailabilityStatus.VARIANTS_MISSSING
-    url = reverse(
-        'product:details',
-        kwargs={'product_id': product.pk, 'slug': product.get_slug()})
-    response = admin_client.get(url)
-    assert response.status_code == 200
-
-
-def test_include_products_from_subcategories_in_main_view(
-        default_category, product_in_stock, authorized_client):
-    subcategory = Category.objects.create(
-        name='sub', slug='test', parent=default_category)
-    product = product_in_stock
-    product.category = subcategory
-    product.save()
-    path = default_category.get_full_path()
-    # URL to parent category view
-    url = reverse(
-        'product:category', kwargs={
-            'path': path, 'category_id': default_category.pk})
-    response = authorized_client.get(url)
-    assert product in response.context_data['products'][0]
-
-
-@patch('saleor.product.thumbnails.create_thumbnails')
-def test_create_product_thumbnails(
-        mock_create_thumbnails, product_with_image):
-    product_image = product_with_image.images.first()
-    create_product_thumbnails(product_image.pk)
-    assert mock_create_thumbnails.called_once_with(
-        product_image.pk, ProductImage, 'products')
+    assert resp_decoded == {'results': products_list}

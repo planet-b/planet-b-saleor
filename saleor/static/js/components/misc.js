@@ -1,4 +1,3 @@
-import 'lazysizes';
 import SVGInjector from 'svg-injector-2';
 
 export const getAjaxError = (response) => {
@@ -26,7 +25,4 @@ export default $(document).ready((e) => {
 
   let hash = window.location.hash;
   $('.nav-tabs a[href="' + hash + '"]').tab('show');
-
-  // Preload all images
-  window.lazySizesConfig.preloadAfterLoad = true;
 });

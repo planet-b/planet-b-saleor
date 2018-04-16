@@ -2,13 +2,13 @@
   list-style: none;
   display: block;
   text-align: center;
-  .page-item {
+  li {
     display: inline-block;
     font-size: $small-font-size;
-    .page-link {
+    a {
       color: $body-color;
       padding: $global-padding / 2 $global-padding;
-      border: none;
+      border-bottom: 1px solid $white;
       &:hover {
         text-decoration: none;
         background-color: $light-gray;

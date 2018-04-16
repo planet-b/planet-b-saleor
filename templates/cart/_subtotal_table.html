@@ -1,6 +1,6 @@
 {% load i18n %}
 {% load price_range from price_ranges %}
-{% load prices_i18n %}
+{% load gross from prices_i18n %}
 
 {% if shipping_required %}
   <div class="table__row">
@@ -9,14 +9,16 @@
         <h3>{% trans "Subtotal" context "Order subtotal" %}</h3>
       </div>
       <div class="col-4">
-        <h3 class="text-right cart-subtotal" data-value="{{ cart_total.gross|amount }}" {% if local_cart_total is not None %}data-value-local="{{ local_cart_total.gross|amount }}"{% endif %}>
+        <h3 class="text-right cart-subtotal"
+           data-value="{% gross cart_total %}"
+           {% if local_cart_total %}data-value-local="{% gross local_cart_total %}"{% endif %}>
           {% spaceless %}
-            {{ cart_total.gross|amount:'html' }}
-            {% if local_cart_total is not None and local_cart_total.gross %}
+            {% gross cart_total html=True %}
+            {% if local_cart_total %}
               <br>
               <small>
                 &asymp;
-                {{ local_cart_total.gross|amount:'html' }}
+                {% gross local_cart_total html=True %}
               </small>
             {% endif %}
           {% endspaceless %}
@@ -57,17 +59,15 @@
     </div>
     <div class="col-4">
       {% spaceless %}
-        {% if total_with_shipping %}
-          <h3 class="text-right cart-total"><span>{% price_range total_with_shipping %}</span>
-            {% if local_total_with_shipping %}
-              <br>
-              <small>
-                &asymp;
-                {% price_range local_total_with_shipping %}
-              </small>
-            {% endif %}
-          </h3>
-        {% endif %}
+        <h3 class="text-right cart-total"><span>{% price_range total_with_shipping %}</span>
+          {% if local_total_with_shipping %}
+            <br>
+            <small>
+              &asymp;
+              {% price_range local_total_with_shipping %}
+            </small>
+          {% endif %}
+        </h3>
       {% endspaceless %}
     </div>
   </div>

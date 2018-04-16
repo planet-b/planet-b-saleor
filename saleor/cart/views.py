@@ -3,9 +3,9 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.response import TemplateResponse
 from django.urls import reverse
+from django_babel.templatetags.babel import currencyfmt
 
-from ..core.utils import (
-    format_money, get_user_shipping_country, to_local_currency)
+from ..core.utils import get_user_shipping_country, to_local_currency
 from ..product.models import ProductVariant
 from ..shipping.utils import get_shipment_options
 from .forms import CountryForm, ReplaceCartLineForm
@@ -28,7 +28,7 @@ def index(request, cart):
         pass
 
     for line in cart.lines.all():
-        initial = {'quantity': line.quantity}
+        initial = {'quantity': line.get_quantity()}
         form = ReplaceCartLineForm(None, cart=cart, variant=line.variant,
                                    initial=initial, discounts=discounts)
         cart_lines.append({
@@ -92,14 +92,17 @@ def update(request, cart, variant_id):
                 'numLines': len(cart)}}
         updated_line = cart.get_line(form.cart_line.variant)
         if updated_line:
-            response['subtotal'] = format_money(
-                updated_line.get_total(discounts=discounts).gross)
+            response['subtotal'] = currencyfmt(
+                updated_line.get_total(discounts=discounts).gross,
+                updated_line.get_total(discounts=discounts).currency)
         if cart:
             cart_total = cart.get_total(discounts=discounts)
-            response['total'] = format_money(cart_total.gross)
+            response['total'] = currencyfmt(
+                cart_total.gross, cart_total.currency)
             local_cart_total = to_local_currency(cart_total, request.currency)
-            if local_cart_total is not None:
-                response['localTotal'] = format_money(local_cart_total.gross)
+            if local_cart_total:
+                response['localTotal'] = currencyfmt(
+                    local_cart_total.gross, local_cart_total.currency)
         status = 200
     elif request.POST is not None:
         response = {'error': form.errors}
@@ -111,8 +114,8 @@ def update(request, cart, variant_id):
 def summary(request, cart):
     """Display a cart summary suitable for displaying on all pages."""
     def prepare_line_data(line):
-        product_type = line.variant.product.product_type
-        attributes = product_type.variant_attributes.all()
+        product_class = line.variant.product.product_class
+        attributes = product_class.variant_attributes.all()
         first_image = line.variant.get_first_image()
         price_per_item = line.get_price_per_item(discounts=request.discounts)
         line_total = line.get_total(discounts=request.discounts)
@@ -120,10 +123,11 @@ def summary(request, cart):
             'product': line.variant.product,
             'variant': line.variant.name,
             'quantity': line.quantity,
-            'attributes': line.variant.display_variant_attributes(attributes),
+            'attributes': line.variant.display_variant(attributes),
             'image': first_image,
-            'price_per_item': format_money(price_per_item.gross),
-            'line_total': format_money(line_total.gross),
+            'price_per_item': currencyfmt(
+                price_per_item.gross, price_per_item.currency),
+            'line_total': currencyfmt(line_total.gross, line_total.currency),
             'update_url': reverse(
                 'cart:update-line', kwargs={'variant_id': line.variant_id}),
             'variant_url': line.variant.get_absolute_url()}
@@ -133,7 +137,7 @@ def summary(request, cart):
         cart_total = cart.get_total(discounts=request.discounts)
         data = {
             'quantity': cart.quantity,
-            'total': format_money(cart_total.gross),
+            'total': currencyfmt(cart_total.gross, cart_total.currency),
             'lines': [prepare_line_data(line) for line in cart.lines.all()]}
 
-    return render(request, 'cart_dropdown.html', data)
+    return render(request, 'cart-dropdown.html', data)

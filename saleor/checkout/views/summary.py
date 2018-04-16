@@ -2,14 +2,14 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils.translation import pgettext, pgettext_lazy
+from satchless.item import InsufficientStock
 
-from ...account.forms import get_address_form
-from ...account.models import Address
-from ...core.exceptions import InsufficientStock
-from ...order.emails import send_order_confirmation
 from ..forms import (
     AnonymousUserBillingForm, BillingAddressesForm,
-    BillingWithoutShippingAddressForm, NoteForm)
+    BillingWithoutShippingAddressForm)
+from ...userprofile.forms import get_address_form
+from ...userprofile.models import Address
+from ...order import OrderStatus
 
 
 def create_order(checkout):
@@ -25,9 +25,10 @@ def create_order(checkout):
     checkout.clear_storage()
     checkout.cart.clear()
     user = None if checkout.user.is_anonymous else checkout.user
-    msg = pgettext_lazy('Order status history entry', 'Order was placed')
-    order.history.create(user=user, content=msg)
-    send_order_confirmation.delay(order.pk)
+    order.create_history_entry(
+        status=OrderStatus.OPEN, user=user, comment=pgettext_lazy(
+            'Order status history entry', 'Order was placed'))
+    order.send_confirmation_email()
     return order, redirect('order:payment', token=order.token)
 
 
@@ -49,7 +50,7 @@ def handle_order_placement(request, checkout):
 def get_billing_forms_with_shipping(
         data, addresses, billing_address, shipping_address):
     """Get billing form based on a the current billing and shipping data."""
-    if billing_address == shipping_address:
+    if Address.objects.are_identical(billing_address, shipping_address):
         address_form, preview = get_address_form(
             data, country_code=shipping_address.country.code,
             autocomplete_type='billing',
@@ -92,10 +93,6 @@ def summary_with_shipping_view(request, checkout):
 
     Will create an order if all data is valid.
     """
-    note_form = NoteForm(request.POST or None, checkout=checkout)
-    if note_form.is_valid():
-        note_form.set_checkout_note()
-
     if request.user.is_authenticated:
         additional_addresses = request.user.addresses.all()
     else:
@@ -111,8 +108,7 @@ def summary_with_shipping_view(request, checkout):
         request, 'checkout/summary.html', context={
             'addresses_form': addresses_form, 'address_form': address_form,
             'checkout': checkout,
-            'additional_addresses': additional_addresses,
-            'note_form': note_form})
+            'additional_addresses': additional_addresses})
 
 
 def anonymous_summary_without_shipping(request, checkout):
@@ -120,9 +116,6 @@ def anonymous_summary_without_shipping(request, checkout):
 
     Will create an order if all data is valid.
     """
-    note_form = NoteForm(request.POST or None, checkout=checkout)
-    if note_form.is_valid():
-        note_form.set_checkout_note()
     user_form = AnonymousUserBillingForm(
         request.POST or None, initial={'email': checkout.email})
     billing_address = checkout.billing_address
@@ -141,8 +134,7 @@ def anonymous_summary_without_shipping(request, checkout):
     return TemplateResponse(
         request, 'checkout/summary_without_shipping.html', context={
             'user_form': user_form, 'address_form': address_form,
-            'checkout': checkout,
-            'note_form': note_form})
+            'checkout': checkout})
 
 
 def summary_without_shipping(request, checkout):
@@ -150,10 +142,6 @@ def summary_without_shipping(request, checkout):
 
     Will create an order if all data is valid.
     """
-    note_form = NoteForm(request.POST or None, checkout=checkout)
-    if note_form.is_valid():
-        note_form.set_checkout_note()
-
     billing_address = checkout.billing_address
     user_addresses = request.user.addresses.all()
     if billing_address and billing_address.id:
@@ -191,5 +179,4 @@ def summary_without_shipping(request, checkout):
     return TemplateResponse(
         request, 'checkout/summary_without_shipping.html', context={
             'addresses_form': addresses_form, 'address_form': address_form,
-            'checkout': checkout, 'additional_addresses': user_addresses,
-            'note_form': note_form})
+            'checkout': checkout, 'additional_addresses': user_addresses})

@@ -2,9 +2,6 @@
 {% load i18n %}
 {% load staticfiles %}
 {% load render_bundle from webpack_loader %}
-{% load shop %}
-{% load placeholder %}
-{% load translate_url from urls %}
 
 <html lang="{{ LANGUAGE_CODE }}" class="no-js" data-shipping-options-url="{% url 'cart:shipping-options' %}" data-cart-summary-url="{% url 'cart:cart-summary' %}">
 <head>
@@ -12,21 +9,15 @@
   {% block meta %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="Saleor">
-    <meta name="theme-color" content="#333333">
-    <meta name="msapplication-TileColor" content="#2b5797">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="{{ site.name }}">
+    <meta name="description" content="{% block meta_description %}{% endblock %}">
+    <meta name="author" content="{% trans "Mirumee Software" context "Meta author text" %}">
+    <meta name="theme-color" content="#21915a">
     <meta name="og:type" content="website">
-    {% get_available_languages as LANGUAGES %}
-    {% for lang_code, language_name in LANGUAGES %}
-      <link rel="alternate" hreflang="{{ lang_code }}" href="{% translate_url url=request.path lang_code=lang_code %}" />
-    {% endfor %}
   {% endblock meta %}
 
   {% include 'favicon.html' %}
-  {% render_bundle 'storefront' 'css' attrs='async' %}
+  {% render_bundle 'vendor' 'css' %}
+  {% render_bundle 'storefront' 'css' %}
 
   {% block stylesheet %}{% endblock stylesheet %}
 
@@ -35,8 +26,6 @@
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
     <meta property="og:image" content="{% static "images/block1.png" %}">
   {% endblock meta_tags %}
-
-  <link rel="manifest" href="{% url "manifest" %}" />
 
   <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
   <!--[if lt IE 9]>
@@ -55,7 +44,6 @@
         </div>
         <div class="col-6">
           <ul class="float-right">
-            {% include "_language_picker.html" %}
             {% if user.is_authenticated %}
               {% if user.is_staff or request.impersonator.is_staff %}
                 <li>
@@ -65,7 +53,7 @@
                 </li>
               {% endif %}
               <li>
-                <a href="{% url "account:details" %}">
+                <a href="{% url "profile:details" %}">
                   {% trans "Your account" context "Main navigation item" %}</a>
               </li>
               {% if user.is_impersonate %}
@@ -76,17 +64,17 @@
                 </li>
               {% else %}
                 <li>
-                  <a href="{% url "account:logout" %}">
+                  <a href="{% url "account_logout" %}">
                     {% trans "Log out" context "Main navigation item" %}</a>
                 </li>
               {% endif %}
             {% else %}
               <li>
-                <a rel="nofollow" href="{% url "account:signup" %}">
+                <a rel="nofollow" href="{% url "account_signup" %}">
                   {% trans "Register" context "Main navigation item" %}</a>
               </li>
               <li>
-                <a rel="nofollow" href="{% url "account:login" %}">
+                <a rel="nofollow" href="{% url "account_login" %}">
                   {% trans "Log in" context "Main navigation item" %}
                 </a>
               </li>
@@ -101,7 +89,7 @@
         <div class="row no-gutters">
           <div class="col-8 col-md-4 navbar__logo">
             <div class="menu-icon-mobile d-md-none navbar__brand__menu-toggle closed open">
-              <svg data-src="{% static "images/mobile-menu.svg" %}" width="28px" height="20px"/>
+              <svg data-src="{% static "images/mobile_menu.svg" %}" width="28px" height="20px"/>
               <span>{% trans "menu" context "Hamburger button text" %}</span>
             </div>
             <a href="{% url 'home' %}">
@@ -131,7 +119,7 @@
             <div class="navbar__brand__cart float-right">
               <a rel="nofollow" class="cart__icon" href="{% url "cart:index" %}">
                 <span class="cart-label d-none d-md-inline-block">
-                  {% trans "Your Cart" context "Main navigation item" %}
+                    {% trans "Your Cart" context "Main navigation item" %}
                 </span>
                 <div class="navbar__brand__cart__icon">
                   <svg data-src="{% static "images/cart.svg" %}" width="35" height="30"/>
@@ -145,7 +133,7 @@
                 </span>
               </a>
               <div class="cart-dropdown d-none">
-                {% include 'cart_dropdown.html' %}
+                {% include 'cart-dropdown.html' %}
               </div>
             </div>
           </div>
@@ -154,13 +142,21 @@
     </div>
     <div class="navbar__menu container d-block">
       <nav class="navigation">
-        {% menu 'navbar' horizontal=True %}
+        {% url 'home' as home_url %}
+        <ul class="nav navbar-nav mb-4 mb-md-0{% if request.get_full_path == home_url %} no-border{% endif %}">
+          {% for category in categories %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ category.get_absolute_url }}">
+                {{ category }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
       </nav>
     </div>
   </header>
 {% endblock %}
 <div class="container maincontent">
-  {% block topcontent %}{% endblock topcontent %}
   {% if messages %}
     {% for message in messages %}
       <div class="alert{% if message.tags %} alert-{{ message.tags }}{% endif %}">
@@ -184,7 +180,15 @@
           </a>
         </div>
         <div class="col-md-3 col-sm-6">
-          {% menu 'footer' %}
+          <ul>
+            {% for category in categories %}
+              <li>
+                <a href="{{ category.get_absolute_url }}">
+                  {{ category|capfirst }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
         </div>
         <div class="col-md-3 col-sm-6">
           <ul>
@@ -207,7 +211,7 @@
                 </li>
               {% endif %}
               <li>
-                <a href="{% url "account:details" %}">
+                <a href="{% url "profile:details" %}">
                   {% trans "Your account" context "Main navigation item" %}
                 </a>
               </li>
@@ -219,18 +223,18 @@
                 </li>
               {% else %}
                 <li>
-                  <a href="{% url "account:logout" %}">
+                  <a href="{% url "account_logout" %}">
                     {% trans "Log out" context "Main navigation item" %}</a>
                 </li>
               {% endif %}
             {% else %}
               <li>
-                <a rel="nofollow" href="{% url "account:signup" %}">
+                <a rel="nofollow" href="{% url "account_signup" %}">
                   {% trans "Register" context "Main navigation item" %}
                 </a>
               </li>
               <li>
-                <a rel="nofollow" href="{% url "account:login" %}">
+                <a rel="nofollow" href="{% url "account_login" %}">
                   {% trans "Log in" context "Main navigation item" %}
                 </a>
               </li>
@@ -239,28 +243,28 @@
         </div>
         <div class="col-md-3 col-sm-12">
           <a target="_blank" rel="noopener" class="social-footer" href="https://www.facebook.com/mirumeelabs/">
-            <svg data-src="{% static "images/facebook-logo.svg" %}" width="45px" height="45px"/>
+            <svg data-src="{% static "images/facebook_logo.svg" %}" width="45px" height="45px"/>
           </a>
           <a target="_blank" rel="noopener" class="social-footer" href="https://github.com/mirumee/saleor">
-            <svg data-src="{% static "images/github-logo.svg" %}" width="45px" height="45px"/>
+            <svg data-src="{% static "images/github_logo.svg" %}" width="45px" height="45px"/>
           </a>
           <a target="_blank" rel="noopener" class="social-footer" href="https://twitter.com/getsaleor">
-            <svg data-src="{% static "images/twitter-logo.svg" %}" width="45px" height="45px"/>
+            <svg data-src="{% static "images/twitter_logo.svg" %}" width="45px" height="45px"/>
           </a>
           <a target="_blank" rel="noopener" class="social-footer" href="https://plus.google.com/+Mirumee">
-            <svg data-src="{% static "images/google-logo.svg" %}" width="45px" height="45px"/>
+            <svg data-src="{% static "images/google_logo.svg" %}" width="45px" height="45px"/>
           </a>
           <a target="_blank" rel="noopener" class="social-footer" href="https://www.meetup.com/Mirumee-Talks/">
-            <svg data-src="{% static "images/meetup-logo.svg" %}" width="45px" height="45px"/>
+            <svg data-src="{% static "images/meetup_logo.svg" %}" width="45px" height="45px"/>
           </a>
           <a target="_blank" rel="noopener" class="social-footer" href="https://linkedin.com/company/mirumee-software">
-            <svg data-src="{% static "images/linkedin-logo.svg" %}" width="45px" height="45px"/>
+            <svg data-src="{% static "images/linkedin_logo.svg" %}" width="45px" height="45px"/>
           </a>
           <a target="_blank" rel="noopener" class="social-footer" href="https://dribbble.com/mirumee">
-            <svg data-src="{% static "images/dribbble-logo.svg" %}" width="45px" height="45px"/>
+            <svg data-src="{% static "images/dribbble_logo.svg" %}" width="45px" height="45px"/>
           </a>
           <a target="_blank" rel="noopener" class="social-footer" href="https://www.instagram.com/explore/tags/mirumee/">
-            <svg data-src="{% static "images/instagram-logo.svg" %}" width="45px" height="45px"/>
+            <svg data-src="{% static "images/instagram_logo.svg" %}" width="45px" height="45px"/>
           </a>
         </div>
       </div>
@@ -269,7 +273,9 @@
 {% endblock %}
 {% block footer_scripts %}
   <script type="text/javascript" src="{% url 'javascript-catalog' %}"></script>
+  {% render_bundle 'vendor' 'js' %}
   {% render_bundle 'storefront' 'js' %}
 {% endblock footer_scripts %}
+<script type="application/ld+json">{{ webpage_schema|safe }}</script>
 </body>
 </html>

@@ -56,13 +56,6 @@
       margin-top: -$global-padding / 2;
       margin-bottom: $global-margin;
     }
-    &__description {
-      blockquote {
-        margin: 1rem 0;
-        padding: 0 2rem;
-        font-style: italic;
-      }
-    }
   }
   &__gallery {
     .carousel-control {
@@ -100,13 +93,6 @@
           }
         }
       }
-    }
-  }
-  &__collections {
-    padding-top: $global-padding * 4;
-    h2 {
-      text-align: center;
-      text-transform: uppercase;
     }
   }
 }

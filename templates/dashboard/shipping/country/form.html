@@ -20,7 +20,7 @@
 
 {% block header_menu %}
   {% url "dashboard:shipping-method-list" as url %}
-  {% include "dashboard/includes/_back_link.html" with url=url %}
+  {% include "dashboard/includes/_back-link.html" with url=url %}
 {% endblock %}
 
 
@@ -28,12 +28,12 @@
   <ul class="breadcrumbs breadcrumbs--history">
     <li>
       <a href="{% url 'dashboard:shipping-methods' %}" class="breadcrumbs--ellipsed-item">
-        {% trans "Shipping methods" context "Dashboard attributes list" %}
+      {% trans "Shipping methods" context "Dashboard attributes list" %}
       </a>
     </li>
     <li class="back-mobile">
       <a href="{% url 'dashboard:shipping-methods' %}">
-        <svg data-src="{% static "dashboard/images/arrow-left.svg" %}" fill="#fff" width="20px" height="20px" />
+        <svg data-src="{% static "dashboard/images/arrow_left.svg" %}" fill="#fff" width="20px" height="20px" />
       </a>
     </li>
     {% if shipping_method.pk %}
@@ -76,14 +76,17 @@
             </div>
           </div>
           <div class="card-action right-align">
-            <a href="{% url 'dashboard:shipping-method-detail' pk=shipping_method.pk %}" class="btn-flat waves-effect">
-              {% trans "Cancel" context "Dashboard cancel action" %}
-            </a>
             {% if country.pk %}
+              <a href="{% url 'dashboard:shipping-method-detail' pk=shipping_method.pk %}" class="btn-flat waves-effect">
+                {% trans "Cancel" context "Dashboard cancel action" %}
+              </a>
               <button type="submit" class="btn waves-effect">
                 {% trans "Save" context "Dashboard update action" %}
               </button>
             {% else %}
+              <a href="{% url 'dashboard:shipping-method-detail' pk=shipping_method.pk %}" class="btn-flat waves-effect">
+                {% trans "Cancel" context "Dashboard cancel action" %}
+              </a>
               <button type="submit" class="btn waves-effect">
                 {% trans "Create" context "Dashboard create action" %}
               </button>

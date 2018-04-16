@@ -19,6 +19,7 @@ def test_get_thumbnail():
 
 
 def test_get_thumbnail_no_instance(monkeypatch):
+    """When no instance, function should return placeholder"""
     monkeypatch.setattr(
         'saleor.product.templatetags.product_images.choose_placeholder',
         lambda x: 'placeholder')

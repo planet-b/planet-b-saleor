@@ -1,4 +1,4 @@
-from prices import TaxedMoney, TaxedMoneyRange
+from prices import PriceRange
 
 from .models import ShippingMethodCountry
 
@@ -11,8 +11,5 @@ def get_shipment_options(country_code):
         shipping_methods = shipping_methods_qs.filter(country_code='')
     if shipping_methods:
         shipping_methods = shipping_methods.values_list('price', flat=True)
-        min_amount = min(shipping_methods)
-        max_amount = max(shipping_methods)
-        return TaxedMoneyRange(
-            start=TaxedMoney(net=min_amount, gross=min_amount),
-            stop=TaxedMoney(net=max_amount, gross=max_amount))
+        return PriceRange(
+            min_price=min(shipping_methods), max_price=max(shipping_methods))

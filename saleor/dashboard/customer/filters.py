@@ -1,11 +1,12 @@
 from django import forms
 from django.db.models import Q
 from django.utils.translation import npgettext, pgettext_lazy
-from django_countries import countries
 from django_filters import CharFilter, ChoiceFilter, OrderingFilter
+from django_countries import countries
 
-from ...account.models import User
 from ...core.filters import SortedFilterSet
+from ...userprofile.models import User
+
 
 SORT_BY_FIELDS = (
     ('email', 'email'),

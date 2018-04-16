@@ -17,18 +17,16 @@
 {% endblock %}
 
 {% block content %}
-  <div class="col s12">
-    <p>
-      {% blocktrans context "Dashboard confirmation modal" %}
-        Are you sure you want to remove variant <strong>{{ variant }}</strong> of product {{ product }}?
-      {% endblocktrans %}
-    </p>
-    {% if is_only_variant %}
-      <p>
-      {% trans "This is the only variant of this product. If you remove it, the product will become unavailable." context "Dashboard confirmation modal" %}
-      </p>
-    {% endif %}
-  </div>
+<p>
+{% blocktrans context "Dashboard confirmation modal" %}
+  Are you sure you want to remove variant <strong>{{ variant }}</strong> of product {{ product }}?
+{% endblocktrans %}
+</p>
+{% if is_only_variant %}
+  <p>
+  {% trans "This is the only variant of this product. If you remove it, the product will become unavailable." context "Dashboard confirmation modal" %}
+  </p>
+{% endif %}
 {% endblock content %}
 
 {% block primary_action %}

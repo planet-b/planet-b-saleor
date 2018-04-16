@@ -26,7 +26,7 @@
     </li>
     <li>
       <span class="breadcrumbs--elipsed-item">
-        {{ shipping_method }}
+          {{ shipping_method }}
       </span>
     </li>
   </ul>
@@ -94,7 +94,7 @@
               {% for country in method_countries %}
                 <tr>
                   <td>{{ country.get_country_code_display }}</td>
-                  <td>{{ country.price|amount:'html' }}</td>
+                  <td>{% gross country.price %}</td>
                   <td class="right-align">
                     <a href="{% url 'dashboard:shipping-method-country-edit' shipping_method_pk=shipping_method.pk country_pk=country.pk %}" class="btn-flat waves-effect">
                       {% trans 'Edit' context 'Attribute choice value edit action' %}
