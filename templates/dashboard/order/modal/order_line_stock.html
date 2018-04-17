@@ -4,11 +4,11 @@
 {% load materializecss %}
 
 {% block action_url %}
-{% url 'dashboard:orderline-split' order_pk=order.pk line_pk=line_pk %}
+{% url 'dashboard:orderline-change-stock' order_pk=order_pk line_pk=line_pk %}
 {% endblock %}
 
 {% block title %}
-{% trans "Split order line" context "Modal split order line title" %}
+{% trans "Change stock" context "Modal change stock title" %}
 {% endblock %}
 
 {% block content %}
@@ -16,5 +16,5 @@
 {% endblock %}
 
 {% block primary_action %}
-{% trans "Split" context "Modal split order line primary action" %}
+{% trans "Change" context "Modal change stock primary action" %}
 {% endblock %}
