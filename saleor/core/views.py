@@ -22,6 +22,15 @@ def home(request):
             'products': products,
             'webpage_schema': json.dumps(webpage_schema)})
 
+def about(request):
+    return TemplateResponse(
+        request, 'brands.html',
+        {})
+
+def brands(request):
+    return TemplateResponse(
+        request, 'brands.html',
+        {})
 
 @staff_member_required
 def styleguide(request):

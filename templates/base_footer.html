@@ -1,0 +1,182 @@
+{% load i18n %}
+{% load staticfiles %}
+{% load render_bundle from webpack_loader %}
+
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3 p-around_large">
+        <a href="{% url 'home' %}" class="logo footer__logo">
+          <svg class="footer-logo" data-src="{% static "images/placeholders/logo-white.svg" %}" />
+        </a>
+        <div class="row">
+          <p class="m-around_none">Based in Vancouver, BC</p>
+        </div>
+        <div class="row">
+          <p class="m-around_none">Canada</p>
+        </div>
+        <div class="row p-top_large">
+          <p class="m-around_none">604-000-0000</p>
+        </div>
+        <div class="row">
+          <a href="mailto:hello@planet-b.co">hello@planet-b.co</a>
+        </div>
+        <div class="row p-top_large">
+          <ul class="footer__social">
+            <li>
+              <svg class="footer-logo" data-src="{% static "images/placeholders/facebook.svg" %}" />
+            </li>
+            <li>
+              <svg class="footer-logo" data-src="{% static "images/placeholders/twitter.svg" %}" />
+            </li>
+            <li>
+              <svg class="footer-logo" data-src="{% static "images/placeholders/instagram.svg" %}" />
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6 p-around_large">
+        <div class="footer__section">
+          <h5 class="footer__section-title">Featured Initatives</h5>
+          <ul>
+            <li>
+              <a><div class="initative list-logo"></div>Initative Title</a>
+            </li>
+            <li>
+              <a><div class="initative list-logo"></div>Initative Title</a>
+            </li>
+            <li>
+              <a><div class="initative list-logo"></div>Initative Title</a>
+            </li>
+            <li>
+              <a><div class="initative list-logo"></div>Initative Title</a>
+            </li>
+            <!--{% for initative in initatives %}
+              <li>
+                <a href="{{ initative.get_absolute_url }}">
+                  {{ initative|capfirst }}
+                </a>
+              </li>
+            {% endfor %}-->
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6 p-around_large">
+        <div class="footer__section">
+          <h5 class="footer__section-title">Featured Brands</h5>
+          <ul>
+            <li>
+              <a><div class="brand list-logo"></div>Brand Title</a>
+            </li>
+            <li>
+              <a><div class="brand list-logo"></div>Brand Title</a>
+            </li>
+            <li>
+              <a><div class="brand list-logo"></div>Brand Title</a>
+            </li>
+            <li>
+              <a><div class="brand list-logo"></div>Brand Title</a>
+            </li>
+            <!--{% for brand in brands %}
+              <li>
+                <a href="{{ brand.get_absolute_url }}">
+                  {{ brand|capfirst }}
+                </a>
+              </li>
+            {% endfor %}-->
+          </ul>
+        </div>
+      </div>
+      <!-- Your Cart / Register / Log in
+      <div class="col-md-3 col-sm-6">
+        <ul>
+          <li>
+            <a rel="nofollow" href="{% url "cart:index" %}">
+              {% trans "Your Cart" context "Main navigation item" %}
+            </a>
+          </li>
+          {% if user.is_authenticated %}
+            {% if user.is_staff %}
+              <li>
+                <a href="{% url "dashboard:index" %}" target="_blank" rel="noopener">
+                  {% trans "Dashboard" context "Main navigation item" %}
+                </a>
+              </li>
+              <li>
+                <a href="{% url "styleguide" %}" target="_blank">
+                  {% trans "Style guide" context "Main navigation item" %}
+                </a>
+              </li>
+            {% endif %}
+            <li>
+              <a href="{% url "profile:details" %}">
+                {% trans "Your account" context "Main navigation item" %}
+              </a>
+            </li>
+            {% if user.is_impersonate %}
+              <li>
+                <a href="{% url "impersonate-stop" %}">
+                  {% trans 'Stop impersonating' context 'Main navigation item' %}
+                </a>
+              </li>
+            {% else %}
+              <li>
+                <a href="{% url "account:logout" %}">
+                  {% trans "Log out" context "Main navigation item" %}</a>
+              </li>
+            {% endif %}
+          {% else %}
+            <li>
+              <a rel="nofollow" href="{% url "account:signup" %}">
+                {% trans "Register" context "Main navigation item" %}
+              </a>
+            </li>
+            <li>
+              <a rel="nofollow" href="{% url "account:login" %}">
+                {% trans "Log in" context "Main navigation item" %}
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </div> -->
+      <div class="col-md-3 col-sm-12 p-around_large">
+        <div class="footer__section">
+          <h5 class="footer__section-title">Site Map</h5>
+          <ul>
+            <!-- {% for site in sites %}
+              <li>
+                <a href="{{ site.get_absolute_url }}">
+                  {{ site|capfirst}}
+                </a>
+              </li>
+            {% endfor %}-->
+            <li>
+              <a>Home</a>
+            </li>
+            <li>
+              <a>About</a>
+            </li>
+            <li>
+              <a>Brands</a>
+            </li>
+            <li>
+              <a>Initatives</a>
+            </li>
+            <li>
+              <a>Learn</a>
+            </li>
+            <li>
+              <a>News</a>
+            </li>
+            <li>
+              <a>Contact</a>
+            </li>
+            <li>
+              <a>Terms &amp; Privacy</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>

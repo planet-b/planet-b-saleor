@@ -1,20 +1,24 @@
 a.btn {
   display: inline-block;
 }
-.btn {
+a.btn, .btn {
   &.neutral {
-    border: 1px solid #092959;
-    color: #DBDD1A;
+    border: solid $dark-blue;
+    color: $dark-blue;
     background-color: transparent;
+  }
+  &.brand {
+    background-color: $dark-blue;
+    border: solid $dark-blue;
+    color: $yellow;
   }
 }
 
-
-.btn {
+a.btn, .btn {
   transition: 0.3s;
-  border-radius: $button-border-radius;
+  border-width: 0.1rem;
   text-transform: uppercase;
-  font-weight: 300;
+  font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
   font-family: $font-family-sans-serif;

@@ -1,10 +1,13 @@
 .footer {
-  background-color: $gray;
+  background-color: $dark-blue;
   padding: $global-padding * 2 0;
+  color: $white;
   margin-top: $global-margin * 8;
   @include media-breakpoint-down(xs) {
     text-align: center;
     margin-top: $global-margin * 2;
+  }
+  &__logo svg {
   }
   &__logo {
     margin-bottom: $global-margin;
@@ -14,6 +17,28 @@
       }
       @include media-breakpoint-down(sm) {
         height: 40px;
+      }
+    }
+  }
+  &__social {
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    flex-grow: 1;
+  }
+  &__social svg {
+    max-width: 50px;
+    width: 100%;
+  }
+  &__section ul li {
+    display: block;
+    a {
+      display: inline-flex;
+      .list-logo {
+        width: 25px;
+        height: 25px;
+        background: white;
+        margin-right: 1rem;
       }
     }
   }
@@ -27,6 +52,7 @@
   }
   a {
     transition: 0.3s;
+    color: $yellow;
     &:hover {
       text-decoration: none;
       opacity: 0.6;

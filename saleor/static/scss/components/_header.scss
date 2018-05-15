@@ -130,22 +130,19 @@
 }
 
 .navbar {
+  &__logo svg {
+  }
+  &__logo {
+    svg {
+      @include media-breakpoint-down(md) {
+        height: 30px;
+      }
+      @include media-breakpoint-down(sm) {
+        height: 40px;
+      }
+    }
+  }
   padding: 0;
-  @include media-breakpoint-down(sm) {
-    > .container-fluid {
-      padding: 0;
-    }
-    svg {
-      max-height: 30px;
-      width: auto;
-    }
-  }
-  @media (max-width: 370px) {
-    svg {
-      max-height: 23px;
-      width: auto;
-    }
-  }
   &__login {
     p {
       font-size: 0.7rem;
