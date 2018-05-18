@@ -1,25 +1,24 @@
 import datetime
 import json
 
-from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
 from ..cart.utils import set_cart_cookie
-from ..core.utils import get_paginator_items, serialize_decimal
-from ..core.utils.filters import get_now_sorted_by, get_sort_by_choices
-from .filters import ProductFilter, SORT_BY_FIELDS
-from .models import Category
+from ..core.utils import serialize_decimal
+from ..seo.schema.product import product_json_ld
+from .filters import ProductCategoryFilter, ProductCollectionFilter
+from .models import Category, Collection
 from .utils import (
     get_availability, get_product_attributes_data, get_product_images,
-    get_variant_picker_data, handle_cart_form, product_json_ld,
-    products_for_cart, products_with_availability, products_with_details)
+    get_product_list_context, get_variant_picker_data, handle_cart_form,
+    products_for_cart, products_with_details)
 
 
 def product_details(request, slug, product_id, form=None):
-    """Product details page
+    """Product details page.
 
     The following variables are available to the template:
 
@@ -63,21 +62,22 @@ def product_details(request, slug, product_id, form=None):
     variant_picker_data = get_variant_picker_data(
         product, request.discounts, request.currency)
     product_attributes = get_product_attributes_data(product)
+    # show_variant_picker determines if variant picker is used or select input
     show_variant_picker = all([v.attributes for v in product.variants.all()])
-    json_ld_data = product_json_ld(product, availability, product_attributes)
+    json_ld_data = product_json_ld(product, product_attributes)
     return TemplateResponse(
-        request, 'product/details.html',
-        {'is_visible': is_visible,
-         'form': form,
-         'availability': availability,
-         'product': product,
-         'product_attributes': product_attributes,
-         'product_images': product_images,
-         'show_variant_picker': show_variant_picker,
-         'variant_picker_data': json.dumps(
-             variant_picker_data, default=serialize_decimal),
-         'json_ld_product_data': json.dumps(
-             json_ld_data, default=serialize_decimal)})
+        request, 'product/details.html', {
+            'is_visible': is_visible,
+            'form': form,
+            'availability': availability,
+            'product': product,
+            'product_attributes': product_attributes,
+            'product_images': product_images,
+            'show_variant_picker': show_variant_picker,
+            'variant_picker_data': json.dumps(
+                variant_picker_data, default=serialize_decimal),
+            'json_ld_product_data': json.dumps(
+                json_ld_data, default=serialize_decimal)})
 
 
 def product_add_to_cart(request, slug, product_id):
@@ -94,7 +94,8 @@ def product_add_to_cart(request, slug, product_id):
     if form.is_valid():
         form.save()
         if request.is_ajax():
-            response = JsonResponse({'next': reverse('cart:index')}, status=200)
+            response = JsonResponse(
+                {'next': reverse('cart:index')}, status=200)
         else:
             response = redirect('cart:index')
     else:
@@ -113,22 +114,25 @@ def category_index(request, path, category_id):
     if actual_path != path:
         return redirect('product:category', permanent=True, path=actual_path,
                         category_id=category_id)
-    products = (products_with_details(user=request.user)
-                .filter(categories__id=category.id)
-                .order_by('name'))
-    product_filter = ProductFilter(
+    # Check for subcategories
+    categories = category.get_descendants(include_self=True)
+    products = products_with_details(user=request.user).filter(
+        category__in=categories).order_by('name')
+    product_filter = ProductCategoryFilter(
         request.GET, queryset=products, category=category)
-    products_paginated = get_paginator_items(
-        product_filter.qs, settings.PAGINATE_BY, request.GET.get('page'))
-    products_and_availability = list(products_with_availability(
-        products_paginated, request.discounts, request.currency))
-    now_sorted_by = get_now_sorted_by(product_filter)
-    arg_sort_by = request.GET.get('sort_by')
-    is_descending = arg_sort_by.startswith('-') if arg_sort_by else False
-    ctx = {'category': category, 'filter_set': product_filter,
-           'products': products_and_availability,
-           'products_paginated': products_paginated,
-           'sort_by_choices': get_sort_by_choices(product_filter),
-           'now_sorted_by': now_sorted_by,
-           'is_descending': is_descending}
+    ctx = get_product_list_context(request, product_filter)
+    ctx.update({'object': category})
     return TemplateResponse(request, 'category/index.html', ctx)
+
+
+def collection_index(request, slug, pk):
+    collection = get_object_or_404(Collection, id=pk)
+    if collection.slug != slug:
+        return HttpResponsePermanentRedirect(collection.get_absolute_url())
+    products = products_with_details(user=request.user).filter(
+        collections__id=collection.id).order_by('name')
+    product_filter = ProductCollectionFilter(
+        request.GET, queryset=products, collection=collection)
+    ctx = get_product_list_context(request, product_filter)
+    ctx.update({'object': collection})
+    return TemplateResponse(request, 'collection/index.html', ctx)

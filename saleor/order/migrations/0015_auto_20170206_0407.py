@@ -57,12 +57,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='order',
             name='billing_address',
-            field=models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='userprofile.Address', verbose_name='billing address'),
+            field=models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='account.Address', verbose_name='billing address'),
         ),
         migrations.AlterField(
             model_name='order',
             name='discount_amount',
-            field=django_prices.models.PriceField(blank=True, currency='USD', decimal_places=2, max_digits=12, null=True, verbose_name='discount amount'),
+            field=django_prices.models.MoneyField(blank=True, currency='USD', decimal_places=2, max_digits=12, null=True, verbose_name='discount amount'),
         ),
         migrations.AlterField(
             model_name='order',
@@ -72,17 +72,17 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='order',
             name='shipping_address',
-            field=models.ForeignKey(editable=False, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='userprofile.Address', verbose_name='shipping address'),
+            field=models.ForeignKey(editable=False, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='account.Address', verbose_name='shipping address'),
         ),
         migrations.AlterField(
             model_name='order',
             name='total_net',
-            field=django_prices.models.PriceField(blank=True, currency='USD', decimal_places=2, max_digits=12, null=True, verbose_name='total net'),
+            field=django_prices.models.MoneyField(blank=True, currency='USD', decimal_places=2, max_digits=12, null=True, verbose_name='total net'),
         ),
         migrations.AlterField(
             model_name='order',
             name='total_tax',
-            field=django_prices.models.PriceField(blank=True, currency='USD', decimal_places=2, max_digits=12, null=True, verbose_name='total tax'),
+            field=django_prices.models.MoneyField(blank=True, currency='USD', decimal_places=2, max_digits=12, null=True, verbose_name='total tax'),
         ),
         migrations.AlterField(
             model_name='order',

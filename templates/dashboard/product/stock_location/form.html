@@ -18,7 +18,7 @@
 {% block header_extra %}
   {% if location.pk %}
     <a class="dropdown-button right" href="#" data-activates="attribute-delete" data-constrainwidth="false">
-      <svg data-src="{% static "dashboard/images/more_vert.svg" %}" height="24" width="24" />
+      <svg data-src="{% static "dashboard/images/more-vert.svg" %}" height="24" width="24" />
     </a>
     <ul id="attribute-delete" class="dropdown-content">
       <li>
@@ -40,7 +40,7 @@
     </li>
     <li class="back-mobile">
       <a href="{% url 'dashboard:sale-list' %}">
-        <svg data-src="{% static "dashboard/images/arrow_left.svg" %}" fill="#fff" width="20px" height="20px" />
+        <svg data-src="{% static "dashboard/images/arrow-left.svg" %}" fill="#fff" width="20px" height="20px" />
       </a>
     </li>
     <li>
@@ -69,17 +69,14 @@
             </div>
           </div>
           <div class="card-action right-align">
+            <a href="{% url 'dashboard:product-stock-location-list' %}" class="btn-flat waves-effect">
+              {% trans "Cancel" context "Dashboard cancel action" %}
+            </a>
             {% if location.pk %}
-              <a href="{% url 'dashboard:product-stock-location-list' %}" class="btn-flat waves-effect">
-                {% trans "Cancel" context "Dashboard cancel action" %}
-              </a>
               <button type="submit" class="btn waves-effect">
                 {% trans "Update" context "Dashboard update action" %}
               </button>
             {% else %}
-              <a href="{% url 'dashboard:product-stock-location-list' %}" class="btn-flat waves-effect">
-                {% trans "Cancel" context "Dashboard cancel action" %}
-              </a>
               <button type="submit" class="btn waves-effect">
                 {% trans "Create" context "Dashboard create action" %}
               </button>

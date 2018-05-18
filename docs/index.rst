@@ -8,19 +8,13 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   installation
-   configuration
-   products
-   stock
-   orders
-   settings
-   contentsearch
-   localization
-   seo
-   payments
+   gettingstarted
+   customization
+   contributing
+   architecture
    integrations
-   development
-   deploy
+   deployment
+   guides
 
 
 Indices and tables

@@ -16,8 +16,19 @@ Pre-install these packages below
 - For Linux, also install these packages 
 	
 	`build-essential libssl-dev libffi-dev python-dev`
+[![codecov.io](http://codecov.io/github/mirumee/saleor/coverage.svg?branch=master)](http://codecov.io/github/mirumee/saleor?branch=master)
+
+* * *
+
+Your feedback
+-------------
 
 # Setting up
+Fill out this short survey and help us grow. It will take just a minute, but mean a lot!
+
+[Survey](https://mirumee.typeform.com/to/sOIJbJ)
+
+* * *
 
 ## 1. Node.js
 
