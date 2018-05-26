@@ -32,6 +32,11 @@ def brands(request):
         request, 'brands.html',
         {})
 
+def initiatives(request):
+    return TemplateResponse(
+        request, 'initiatives.html',
+        {})
+
 @staff_member_required
 def styleguide(request):
     return TemplateResponse(request, 'styleguide.html')
