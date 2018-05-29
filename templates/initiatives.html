@@ -1,10 +1,30 @@
 {% extends "base.html" %}
 
+{% load i18n %}
+{% load get_object_properties from attributes %}
+{% load staticfiles %}
+
 {% block title %}
-	Initiatives
+    Initiatives
 {% endblock %}
 
+{% block breadcrumb %}
+  <ul class="breadcrumbs list-unstyled">
+    <li>
+      <a href="{% url 'home' %}">
+        {% trans 'Home' context 'Main navigation item' %}
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'initiatives' %}">
+        {% trans "Initiatives" context 'Main navigation item' %}
+      </a>
+    </li>
+  </ul>
+{% endblock breadcrumb %}
 
 {% block content %}
-	<h1>Initiatives</h1>
+    {% for initiative in initiatives %}
+      <h1>{{ initiative.name }}</h1>
+    {% endfor %}
 {% endblock %}
