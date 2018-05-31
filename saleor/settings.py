@@ -205,7 +205,6 @@ INSTALLED_APPS = [
     'versatileimagefield',
     'django_babel',
     'bootstrap4',
-    'django_fsm',
     'django_prices',
     'django_prices_openexchangerates',
     'graphene_django',
@@ -474,3 +473,8 @@ ALLOWED_STYLES = ['text-align']
 
 # slugs for menus used in storefront's base template, created by default
 DEFAULT_MENUS = ['navbar', 'footer']
+
+# Configure Django App for Heroku.
+if os.environ.get('DJANGO_HEROKU', False):
+    import django_heroku
+    django_heroku.settings(locals())
