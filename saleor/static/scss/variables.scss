@@ -18,6 +18,7 @@ $light-gray: #f2f2f2;
 $gray: #D3D1D0;
 $darken-gray: darken($gray, 10%);
 $skull-gray: #828282;
+$soft-blue: #26a5d4;
 $blue: #26A5D4;
 $darken-blue: darken($blue, 10%);
 $dark-blue: #092959;
@@ -28,6 +29,9 @@ $beige: #FFFAEC;
 $yellow: #E6E617;
 $error: $dark-red;
 $weak: $skull-gray;
+$progress-yellow: #f2f218;
+$progress-green: #18f2aa;
+$progress-blue: #1885f2;
 
 // TYPOGRAPHY
 $font-family-sans-serif: 'Lato', sans-serif;

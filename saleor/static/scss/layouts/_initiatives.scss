@@ -1,0 +1,12 @@
+.init {
+	&-percent {
+		color: $soft-blue;
+		font-style: bold;
+	}
+	.progress {
+		height: 0.4rem;
+	}
+	.progress-yellow { background-color: $progress-yellow; }
+	.progress-green  { background-color: $progress-green; }
+	.progress-blue   { background-color: $progress-blue; }
+}

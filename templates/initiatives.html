@@ -26,30 +26,30 @@
 {% block content %}
     {% for initiative in initiatives %}
 
-      <div class="initiative text-body">
-        <div class="initiative-image" />
-        <div class="initiative-detail">
+      <div class="init text-body">
+        <div class="init-image" />
+        <div class="init-detail">
           <div class="text-s-header text-italic p-vertical_small">
             {{ initiative.name }}
           </div>
           <div class="text-title">
             By {{ initiative.author_first_name }} {{ initiative.author_last_name }}
           </div>
-          <div class="initiative">
-            <i class="fa fa-map-marker" aria-hidden="true"></i>
-            <div class="text-weak">
+          <div class="init-location">
+            <span class="text-weak">
+              <i class="fa fa-map-marker" aria-hidden="true"></i>
               {{ initiative.location_state }}, {{ initiative.location_country }}
-            </div>
+            </span>
           </div>
           <div class="text-weak text-title-caps p-vertical_small">
             {{ initiative.initiative_category }}
           </div>
           <div class="progress m-vertical_small">
-            <div class="progress-bar" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" style="width:{{ initiative.goal_percentage }}%">
+            <div class="progress-bar progress-yellow" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" style="width:{{ initiative.goal_percentage }}%">
             </div>
           </div>
           <div class="text-weak">
-            <span class="initiative-percentage">{{ initiative.goal_percentage }}</span>% reached
+            <span class="init-percent">{{ initiative.goal_percentage }}%</span> reached
           </div>
           <div class="text-weak">
             ${{ initiative.total_donations }} collected
