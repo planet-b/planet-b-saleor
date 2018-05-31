@@ -1,16 +1,52 @@
 .text-left {
-	text-align: left;
+    text-align: left;
 }
 .text-center {
-	text-align: center;
+    text-align: center;
 }
 .text-right {
-	text-align: right;
+    text-align: right;
 }
 
 .text-error {
-	color: $error;
+    color: $error;
 }
 .text-weak {
-	color: $weak;
+    color: $weak;
+}
+
+.text-s-header {
+    font-size: 1rem;
+    line-height: 1.25;
+    font-weight: bold;
+}
+.text-m-header {
+    font-weight: 300;
+    font-size: 1.25rem;
+    line-height: 1.25;
+    font-weight: bold;
+}
+.text-l-header {
+    font-weight: 300;
+    font-size: 1.75rem;
+    line-height: 1.25;
+    font-weight: bolder;
+}
+
+.text-body {
+    font-size: 0.8125rem;
+}
+
+.text-title,
+.text-title-caps {
+    font-size: 0.75rem;
+    line-height: 1.25;
+}
+.text-title-caps {
+    text-transform: uppercase;
+    letter-spacing: 0.0625rem;
+}
+
+.text-italic {
+    font-style: italic;
 }

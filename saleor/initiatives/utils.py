@@ -16,4 +16,4 @@ from ..seo.schema.product import variant_json_ld
 
 def initiatives_for_homepage():
     from .models import Initiative
-    return [Initiative() for i in range(5)]
+    return [Initiative() for i in range(1)]
