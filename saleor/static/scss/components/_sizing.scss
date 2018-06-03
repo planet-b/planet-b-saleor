@@ -1,14 +1,51 @@
+@each $key, $value in (
+	'padding' : space-around,
+	'center'  : center,
+	'start'   : flex-start,
+	'end'     : flex-end,
+	'space'   : space-around
+){
+	.grid.grid-#{$key} {
+		justify-content: $value;
+	}
+}
+
 .grid {
 	display: flex;
+
+	.grid .grid-col {
+		flex: 1 1 auto;
+	}
 	&.grid-wrap {
 		flex-wrap: wrap;
 		align-items: flex-start;
 	}
-	.grid-col {
-		flex: 1 1 auto;
+	&.grid-gutters .grid-col:first-child,
+	&.grid-gutters .grid-col,
+	&.grid-gutters div:first-child,
+	&.grid-gutters div {
+		padding-right: 0.75rem;
+	}
+	&.grid-gutters .grid-col:last-child,
+	&.grid-gutters .grid-col,
+	&.grid-gutters div:last-child,
+	&.grid-gutters div {
+		padding-left: 0.75rem;
+	}
+
+	/* Assume custom sizing here, no flex time */
+	.grid [class*="col-"] {
+		flex: none;
 	}
 }
-
+/* Custom widths here */
+$maxWidth: 100%;
+@for $i from 1 through 12 {
+	.grid .grid-col-#{$i} {
+		flex: 0 0 ($i / 12 * $maxWidth);
+		width: ($i / 12 * $maxWidth);
+	}
+}
 .align-center {
 	display: -webkit-box;
 	display: -ms-flexbox;

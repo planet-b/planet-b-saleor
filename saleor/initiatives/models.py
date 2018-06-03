@@ -17,6 +17,19 @@ from mptt.models import MPTTModel
 from text_unidecode import unidecode
 from versatileimagefield.fields import PPOIField, VersatileImageField
 
+class Initiative_About(models.Model):
+
+    class Meta:
+        app_label = 'about'
+
+    def __init__(self, obj):
+        self.value = obj['value']
+        self.label = obj['label']
+        self.name = obj['value']
+
+    def __str__(self):
+        return self.name
+
 class Initiative(models.Model):
     slug = 'tacos' # models.SlugField(max_length=128)
     name = 'Haiti Earth Quake Initiative' # models.CharField(max_length=128)
@@ -34,6 +47,7 @@ class Initiative(models.Model):
     #     blank=True, null=True)
     goal_percentage = 25;
     initiative_category = 'Natural Disasters'
+    background_image_url = '/static/images/initiatives/forestFire.jpg'
     donation_days_left = 5 # models.PositiveIntegerField(editable=False)
 
     class Meta:

@@ -13,7 +13,7 @@
     'large'  : $large,
     'x-large': $x-large
 ){
-    .p {
+    .maincontent .p, .p {
         &-around_#{$size}     { padding:        $value; }
         &-vertical_#{$size}   { padding-top:    $value; padding-bottom: $value; }
         &-horizontal_#{$size} { padding-left:   $value; padding-right:  $value; }
@@ -22,7 +22,7 @@
         &-right_#{$size}      { padding-right:  $value; }
         &-left_#{$size}       { padding-left:   $value; }
     }
-    .m {
+    .maincontent .m, .m {
         &-around_#{$size}     { margin:        $value; }
         &-vertical_#{$size}   { margin-top:    $value; margin-bottom: $value; }
         &-horizontal_#{$size} { margin-left:   $value; margin-right:  $value; }

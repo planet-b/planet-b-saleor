@@ -10,10 +10,22 @@ from prices import TaxedMoneyRange
 
 from ..cart.utils import get_cart_from_request, get_or_create_cart_from_request
 from ..core.utils import (
-    ZERO_TAXED_MONEY, get_paginator_items, to_local_currency)
+	ZERO_TAXED_MONEY, get_paginator_items, to_local_currency)
 from ..core.utils.filters import get_now_sorted_by
 from ..seo.schema.product import variant_json_ld
 
 def initiatives_for_homepage():
-    from .models import Initiative
-    return [Initiative() for i in range(1)]
+	from .models import Initiative
+	return [Initiative() for i in range(5)]
+
+def about_categories():
+	from .models import Initiative_About
+	dictionaries = [
+		{"value":"Category 1", "label":"Category 1"},
+		{"value":"Category 2", "label":"Category 2"},
+		{"value":"Category 3", "label":"Category 3"}
+	]
+	categories = list()
+	for cat in dictionaries:
+		categories.append(Initiative_About(cat))
+	return categories

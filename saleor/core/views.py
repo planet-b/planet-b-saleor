@@ -9,6 +9,7 @@ from ..account.models import User
 from ..dashboard.views import staff_member_required
 from ..product.utils import products_for_homepage, products_with_availability
 from ..initiatives.utils import initiatives_for_homepage
+from ..initiatives.utils import about_categories
 from ..seo.schema.webpage import get_webpage_schema
 
 
@@ -33,10 +34,15 @@ def brands(request):
         {})
 
 def initiatives(request):
-    initiatives = initiatives_for_homepage();
+    initiatives = initiatives_for_homepage()
+    categories = about_categories()
     return TemplateResponse(
         request, 'initiatives.html',
-        {'initiatives' : initiatives})
+        {
+            'initiatives' : initiatives,
+            'categories' : categories
+        }
+    )
 
 @staff_member_required
 def styleguide(request):
