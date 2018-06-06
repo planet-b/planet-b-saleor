@@ -18,7 +18,19 @@ def initiatives_for_homepage():
 	from .models import Initiative
 	return [Initiative() for i in range(5)]
 
-def about_categories():
+def initiative_sort_methods():
+	from .models import Initiative_SortMethod
+	dictionaries = [
+		{"value":"Sort 1", "label":"Sort 1"},
+		{"value":"Sort 2", "label":"Sort 2"},
+		{"value":"Sort 3", "label":"Sort 3"}
+	]
+	sortMethods = list()
+	for sort in dictionaries:
+		sortMethods.append(Initiative_SortMethod(sort))
+	return sortMethods
+
+def initiative_about_categories():
 	from .models import Initiative_About
 	dictionaries = [
 		{"value":"Category 1", "label":"Category 1"},

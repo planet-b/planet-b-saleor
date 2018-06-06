@@ -48,21 +48,28 @@
 {% block header %}
   {% include 'base_header.html' %}
 {% endblock %}
-<div class="container maincontent">
-  {% block topcontent %}{% endblock topcontent %}
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert{% if message.tags %} alert-{{ message.tags }}{% endif %}">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        {{ message }}
-      </div>
-    {% endfor %}
-  {% endif %}
-  {% block breadcrumb %}
-  {% endblock breadcrumb %}
-  {% block content %}
-  {% endblock content %}
-</div>
+
+  <div class="container">
+    {% block topcontent %}{% endblock topcontent %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert{% if message.tags %} alert-{{ message.tags }}{% endif %}">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <div class="container">
+    {% block breadcrumb %}
+    {% endblock breadcrumb %}
+  </div>
+  <div class="{{ container_class|default_if_none:'' }}">
+    <div class="container maincontent">
+      {% block content %}
+      {% endblock content %}
+    </div>
+  </div>
 {% block footer %}
   {% include 'base_footer.html' %}
 {% endblock %}

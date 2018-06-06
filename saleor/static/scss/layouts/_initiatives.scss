@@ -1,8 +1,13 @@
+.initiatives {
+	background-image: $gray-tile;
+}
+
 .init {
 	border: 1px solid rgba(190, 190, 190, 1);
 	-webkit-box-shadow: 3px 3px 7px 0px rgba(191,191,191,1);
 	-moz-box-shadow: 3px 3px 7px 0px rgba(191,191,191,1);
 	box-shadow: 3px 3px 7px 0px rgba(191,191,191,1);
+	background: white;
 	&-percent {
 		color: $soft-blue;
 		font-style: bold;

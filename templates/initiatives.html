@@ -27,10 +27,12 @@
 {% block content %}
   <div class="initiatives">
 
-    <div class="header">
-      <button class="btn neutral">Start Your Own</button>
-      <div class="header_seperator"></div>
-      <div class="header_category">
+    <div class="header grid grid-content_even grid-align_center">
+      <div class="grid-col">
+        <button class="btn neutral">Start Your Own</button>
+      </div>
+      <div class="grid-col header_seperator">|</div>
+      <div class="grid-col header_category">
         <span>About</span>
         <select>
         {% for cat in categories %}
@@ -38,9 +40,18 @@
         {% endfor %}
         </select>
       </div>
+      <div class="grid-col header_seperator">|</div>
+      <div class="grid-col header_sort">
+        <span>Sort</span>
+        <select>
+        {% for sort in sortMethods %}
+          <option value="{{sort.value}}">{{sort.label}}</option>
+        {% endfor %}
+        </select>
+      </div>
     </div>
 
-    <div class="grid grid-wrap grid-space">
+    <div class="grid grid-wrap grid-content_space">
       {% for initiative in initiatives %}
 
         <div class="grid-col-4 p-around_large">

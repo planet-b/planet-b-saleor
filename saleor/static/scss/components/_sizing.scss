@@ -3,10 +3,24 @@
 	'center'  : center,
 	'start'   : flex-start,
 	'end'     : flex-end,
-	'space'   : space-around
+	'space'   : space-around,
+	'even'    : space-evenly
 ){
-	.grid.grid-#{$key} {
+	.grid.grid-content_#{$key} {
 		justify-content: $value;
+	}
+}
+
+@each $key, $value in (
+	'stretch' : stretch,
+	'center'  : center,
+	'start'   : flex-start,
+	'end'     : flex-end,
+	'space'   : space-around,
+	'even'    : space-evenly
+){
+	.grid.grid-align_#{$key} {
+		align-items: $value;
 	}
 }
 

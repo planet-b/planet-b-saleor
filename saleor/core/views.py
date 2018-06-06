@@ -9,9 +9,11 @@ from ..account.models import User
 from ..dashboard.views import staff_member_required
 from ..product.utils import products_for_homepage, products_with_availability
 from ..initiatives.utils import initiatives_for_homepage
-from ..initiatives.utils import about_categories
+from ..initiatives.utils import initiative_about_categories
+from ..initiatives.utils import initiative_sort_methods
 from ..seo.schema.webpage import get_webpage_schema
 
+container_class = None
 
 def home(request):
     products = products_for_homepage()[:8]
@@ -20,27 +22,39 @@ def home(request):
     webpage_schema = get_webpage_schema(request)
     return TemplateResponse(
         request, 'home.html', {
+            'container_class':container_class,
             'parent': None,
             'products': products,
             'webpage_schema': json.dumps(webpage_schema)})
 
 def about(request):
     return TemplateResponse(
-        request, 'brands.html', {})
+        request, 'brands.html',
+        {
+            'container_class':container_class
+        }
+    )
 
 def brands(request):
     return TemplateResponse(
         request, 'brands.html',
-        {})
+        {
+            'container_class':container_class
+        }
+    )
 
 def initiatives(request):
     initiatives = initiatives_for_homepage()
-    categories = about_categories()
+    categories = initiative_about_categories()
+    sortMethods = initiative_sort_methods()
+    container_class = 'initiatives'
     return TemplateResponse(
         request, 'initiatives.html',
         {
             'initiatives' : initiatives,
-            'categories' : categories
+            'container_class' : container_class,
+            'categories' : categories,
+            'sortMethods' : sortMethods
         }
     )
 
