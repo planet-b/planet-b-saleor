@@ -49,7 +49,9 @@
   {% include 'base_header.html' %}
 {% endblock %}
 
-  <div class="container">
+{% block banner %}
+{% endblock %}
+  <div class="top-section container">
     {% block topcontent %}{% endblock topcontent %}
     {% if messages %}
       {% for message in messages %}
@@ -60,9 +62,11 @@
       {% endfor %}
     {% endif %}
   </div>
-  <div class="container">
-    {% block breadcrumb %}
-    {% endblock breadcrumb %}
+  <div class="breadcrumb-section p-vertical_small">
+    <div class="container">
+      {% block breadcrumb %}
+      {% endblock breadcrumb %}
+    </div>
   </div>
   <div class="{{ container_class|default_if_none:'' }}">
     <div class="container maincontent">

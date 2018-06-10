@@ -9,40 +9,44 @@
     Initiatives
 {% endblock %}
 
+{% block banner %}
+  <div class="init_banner">
+    hola
+  </div>
+{% endblock %}
+
 {% block breadcrumb %}
-  <ul class="breadcrumbs list-unstyled">
+  <ul class="breadcrumbs list-unstyled text-s-header">
     <li>
       <a href="{% url 'home' %}">
         {% trans 'Home' context 'Main navigation item' %}
       </a>
     </li>
     <li>
-      <a href="{% url 'initiatives' %}">
-        {% trans "Initiatives" context 'Main navigation item' %}
-      </a>
+      {% trans "Initiatives" context 'Main navigation item' %}
     </li>
   </ul>
 {% endblock breadcrumb %}
 
 {% block content %}
-  <div class="initiatives">
+  <div class="">
 
-    <div class="header grid grid-content_even grid-align_center">
+    <div class="header grid grid-content_even grid-align_center p-around_large">
       <div class="grid-col">
         <button class="btn neutral">Start Your Own</button>
       </div>
-      <div class="grid-col header_seperator">|</div>
+      <div class="grid-col header_seperator"></div>
       <div class="grid-col header_category">
-        <span>About</span>
+        <span class="p-right_large">About</span>
         <select>
         {% for cat in categories %}
           <option value="{{cat.value}}">{{cat.label}}</option>
         {% endfor %}
         </select>
       </div>
-      <div class="grid-col header_seperator">|</div>
+      <div class="grid-col header_seperator"></div>
       <div class="grid-col header_sort">
-        <span>Sort</span>
+        <span class="p-right_large">Sort</span>
         <select>
         {% for sort in sortMethods %}
           <option value="{{sort.value}}">{{sort.label}}</option>

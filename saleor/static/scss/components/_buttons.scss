@@ -3,13 +3,13 @@ a.btn {
 }
 a.btn, .btn {
   &.neutral {
-    border: solid $dark-blue;
-    color: $dark-blue;
+    border: solid $brand;
+    color: $brand;
     background-color: transparent;
   }
   &.brand {
-    background-color: $dark-blue;
-    border: solid $dark-blue;
+    background-color: $brand;
+    border: solid $brand;
     color: $yellow;
   }
 }

@@ -1,5 +1,16 @@
 .initiatives {
-	background-image: $gray-tile;
+	background-color: rgba(242, 242, 242, 0.3);
+	.header {
+		border-bottom: 1px solid rgba(197, 197, 197, 1);
+		span {
+			color: rgb(142, 142, 142);
+		}
+		&_seperator {
+			height: 4rem;
+			border-right: 2px solid rgb(231, 231, 231);
+			width: 1px;
+		}
+	}
 }
 
 .init {
@@ -11,6 +22,13 @@
 	&-percent {
 		color: $soft-blue;
 		font-style: bold;
+	}
+
+	&_banner {
+		background-image: url(/static/images/initiatives/banner.png);
+		height: 400px;
+		background-size: cover;
+		background-position: center;
 	}
 
 	&-image {
