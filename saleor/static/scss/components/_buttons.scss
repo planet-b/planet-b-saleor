@@ -6,11 +6,17 @@ a.btn, .btn {
     border: solid $brand;
     color: $brand;
     background-color: transparent;
+    &:hover, &:focus {
+      background-color: rgba(transparent, 0.1);
+    }
   }
   &.brand {
     background-color: $brand;
     border: solid $brand;
     color: $yellow;
+    &:hover, &:focus {
+      background-color: rgba($brand, 0.7);
+    }
   }
 }
 

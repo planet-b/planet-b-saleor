@@ -2,7 +2,6 @@
   background-color: $brand;
   padding: $global-padding * 2 0;
   color: $white;
-  margin-top: $global-margin * 8;
   @include media-breakpoint-down(xs) {
     text-align: center;
     margin-top: $global-margin * 2;

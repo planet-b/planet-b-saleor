@@ -49,6 +49,29 @@
   {% include 'base_header.html' %}
 {% endblock %}
 
+{% block drive_innovation %}
+ <div class="innovation-section section container p-vertical_large">
+    <div class="grid grid-align_center grid-content_between">
+      <div class="grid-col">
+        <a href="" class="btn neutral item_neutral">Shop</a>
+      </div>
+      <div class="grid-col">
+        <div class="item_expr">+</div>
+      </div>
+      <div class="grid-col">
+        <a href="{% url 'initiatives' %}" class="btn neutral item_neutral">Choose Initiatives</a>
+      </div>
+      <div class="grid-col">
+        <div class="item_expr">=</div>
+      </div>
+      <div class="grid-col">
+        <a href="{% url 'about' %}" class="btn brand item_brand">Drive Innovation</a>
+      </div>
+
+    </div>
+ </div>
+{% endblock %}
+
 {% block banner %}
 {% endblock %}
   <div class="top-section container">

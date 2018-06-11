@@ -4,7 +4,8 @@
 	'start'   : flex-start,
 	'end'     : flex-end,
 	'space'   : space-around,
-	'even'    : space-evenly
+	'even'    : space-evenly,
+	'between' : space-between
 ){
 	.grid.grid-content_#{$key} {
 		justify-content: $value;

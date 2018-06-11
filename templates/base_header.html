@@ -4,15 +4,15 @@
 
 <header class="navbar p-top_small" role="navigation">
   <div class="navbar__login container-fluid {% if user.is_impersonate %} bg-warning{% endif %}">
-    <div class=" d-none d-md-block container">
+    <div class="container">
 	    <div class="row">
-	      <div class="col-6">
+	      <div class="col-3 p-around_none">
 	      	<a href="{% url 'home' %}" class="logo navbar__logo">
 	          <!-- <svg class="navbar-logo" data-src="{% static 'images/placeholders/logo-deepBlue.svg' %}" /> -->
 	          <svg class="navbar-logo" data-src="{% static "images/planetB_logoWordmark_darkBlue.svg" %}" />
 	        </a>
 	      </div>
-	      <div class="col-6">
+	      <div class="col-9 p-around_none">
 	        <ul class="float-right">
 	          {% if user.is_authenticated %}
 	            {% if user.is_staff or request.impersonator.is_staff %}
