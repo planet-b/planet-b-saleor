@@ -3,6 +3,14 @@ $global-padding: 1rem;
 $global-margin: 1rem;
 $button-border-radius: 4px;
 
+// SIZING VARIABLES
+$none: 0;
+$x-small: 0.5rem;
+$small: 0.75rem;
+$medium: 1rem;
+$large: 1.5rem;
+$x-large: 2rem;
+
 // COLORS
 $body-color: #333333;
 $white: #fff;
@@ -12,10 +20,14 @@ $darken-gray: darken($gray, 10%);
 $skull-gray: #828282;
 $blue: #26A5D4;
 $darken-blue: darken($blue, 10%);
+$dark-blue: #092959;
 $red: #EB5757;
 $dark-red: #c53636;
 $green: #27AE60;
 $beige: #FFFAEC;
+$yellow: #E6E617;
+$error: $dark-red;
+$weak: $skull-gray;
 
 // TYPOGRAPHY
 $font-family-sans-serif: 'Lato', sans-serif;

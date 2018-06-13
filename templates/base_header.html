@@ -1,0 +1,65 @@
+{% load i18n %}
+{% load staticfiles %}
+{% load render_bundle from webpack_loader %}
+
+<header class="navbar p-top_small" role="navigation">
+  <div class="navbar__login container-fluid {% if user.is_impersonate %} bg-warning{% endif %}">
+    <div class=" d-none d-md-block container">
+	    <div class="row">
+	      <div class="col-6">
+	      	<a href="{% url 'home' %}" class="logo navbar__logo">
+	          <svg class="navbar-logo" data-src="{% static "images/placeholders/logo-deepBlue.svg" %}" />
+	        </a>
+	      </div>
+	      <div class="col-6">
+	        <ul class="float-right">
+	          {% if user.is_authenticated %}
+	            {% if user.is_staff or request.impersonator.is_staff %}
+	              <li>
+	                <a href="{% url "dashboard:index" %}" target="_blank" rel="noopener">
+	                  {% trans "Dashboard" context "Main navigation item" %}
+	                </a>
+	              </li>
+	            {% endif %}
+	            <li>
+	              <a href="{% url "profile:details" %}">
+	                {% trans "Your account" context "Main navigation item" %}</a>
+	            </li>
+	            {% if user.is_impersonate %}
+	              <li>
+	                <a href="{% url "impersonate-stop" %}">
+	                  {% trans 'Stop impersonating' context 'Main navigation item' %}
+	                </a>
+	              </li>
+	            {% else %}
+	              <li>
+	                <a href="{% url "account:logout" %}">
+	                  {% trans "Log out" context "Main navigation item" %}</a>
+	              </li>
+	            {% endif %}
+	          {% else %}
+	            <li>
+	              <a rel="nofollow" href="{% url "about" %}">
+	                {% trans "About" context "Main navigation item" %}</a>
+	            </li>
+	            <li>
+	              <a rel="nofollow" href="{% url "brands" %}">
+	                {% trans "Brands" context "Main navigation item" %}</a>
+	            </li>
+	            <li>
+	              <a rel="nofollow" href="{% url "account:signup" %}">
+	                {% trans "Register" context "Main navigation item" %}</a>
+	            </li>
+	            <li>
+	              <a class="btn neutral" rel="nofollow" href="{% url "account:login" %}">
+	                {% trans "Log in" context "Main navigation item" %}
+	              </a>
+	            </li>
+	          {% endif %}
+	        </ul>
+	      </div>
+	    </div>
+	  </div>
+  </div>
+  <div class="drive_innovation"></div>
+</header>

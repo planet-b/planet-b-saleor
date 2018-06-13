@@ -2,6 +2,8 @@
 @import "fontawesome/font-awesome";
 @import "~bootstrap/scss/bootstrap";
 
+@import "global";
+
 @import "components/breadcrumbs";
 @import "components/buttons";
 @import "components/cards";
@@ -13,8 +15,11 @@
 @import "components/labels";
 @import "components/loader";
 @import "components/pagination";
+@import "components/sizing";
+@import "components/spacing";
 @import "components/table";
 @import "components/tabs";
+@import "components/text";
 @import "components/typography";
 @import "components/variant-picker";
 

@@ -1,0 +1,25 @@
+.grid {
+	display: flex;
+	&.grid-wrap {
+		flex-wrap: wrap;
+		align-items: flex-start;
+	}
+	.grid-col {
+		flex: 1 1 auto;
+	}
+}
+
+.align-center {
+	display: -webkit-box;
+	display: -ms-flexbox;
+	display: flex;
+	-webkit-box-pack: center;
+	-ms-flex-pack: center;
+	justify-content: center;
+	-ms-flex-line-pack: center;
+	align-content: center;
+	-webkit-box-align: center;
+	-ms-flex-align: center;
+	align-items: center;
+	margin: auto;
+}

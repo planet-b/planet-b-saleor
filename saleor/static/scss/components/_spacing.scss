@@ -1,0 +1,34 @@
+/* Because we have to overwrite native styles */
+.row {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+/* Simple margins/padding for injecting into HTML */
+@each $size, $value in (
+    'none'   : $none,
+    'x-small': $x-small,
+    'small'  : $small,
+    'medium' : $medium,
+    'large'  : $large,
+    'x-large': $x-large
+){
+    .p {
+        &-around_#{$size}     { padding:        $value; }
+        &-vertical_#{$size}   { padding-top:    $value; padding-bottom: $value; }
+        &-horizontal_#{$size} { padding-left:   $value; padding-right:  $value; }
+        &-top_#{$size}        { padding-top:    $value; }
+        &-bottom_#{$size}     { padding-bottom: $value; }
+        &-right_#{$size}      { padding-right:  $value; }
+        &-left_#{$size}       { padding-left:   $value; }
+    }
+    .m {
+        &-around_#{$size}     { margin:        $value; }
+        &-vertical_#{$size}   { margin-top:    $value; margin-bottom: $value; }
+        &-horizontal_#{$size} { margin-left:   $value; margin-right:  $value; }
+        &-top_#{$size}        { margin-top:    $value; }
+        &-bottom_#{$size}     { margin-bottom: $value; }
+        &-right_#{$size}      { margin-right:  $value; }
+        &-left_#{$size}       { margin-left:   $value; }
+    }
+}

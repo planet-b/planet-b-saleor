@@ -1,0 +1,19 @@
+.logo {
+    svg {
+        max-width: 50px;
+        width: 100%;
+        height: auto;
+    }
+    @include media-breakpoint-down(sm) {
+        svg {
+          max-height: 30px;
+          width: auto;
+        }
+    }
+    @media (max-width: 370px) {
+        svg {
+          max-height: 23px;
+          width: auto;
+        }
+    }
+}
