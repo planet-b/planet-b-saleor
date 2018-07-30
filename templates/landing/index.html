@@ -8,13 +8,13 @@
       <title>Planet B</title>
       <style>
         html, body {
-            background: url({% static "images/planetb_bg_desktop.jpg" %});
+            background: url({% static "images/planetB_splash_hero_desktop.jpg" %});
             background-position: center;
             background-repeat: no-repeat;
             background-size: cover;
             height: 100%;
             margin: 0;
-            color: white;
+            color: #BFBFBF;
         }
         .container {
             margin-left: 40%;
@@ -22,6 +22,14 @@
         }
         .large-logo > svg {
             width: 50%;
+        }
+        .social-button-logo{
+            width: 50px;
+            height: 50px;
+        }
+        .button{
+            background-color: #F2F2F2;
+            color: #092959;
         }
         .innovate {
             font-weight: 900;
@@ -81,13 +89,13 @@
                 Follow us on
                 <div class="social-media">
                     <div class="social-media-item">
-                        <a href="">Facebook</a>
+                        <a href=""><img src="{% static "images/planetB_splash_social_facebook.svg" %}" class="social-button-logo"></a>
                     </div>
                     <div class="social-media-item">
-                        <a href="">Twitter</a>
+                        <a href=""><img src="{% static "images/planetB_splash_social_instagram.svg" %}" class="social-button-logo"></a>
                     </div>
                     <div class="social-media-item">
-                        <a href="">Instragram</a>
+                        <a href=""><img src="{% static "images/planetB_splash_social_twitter.svg" %}" class="social-button-logo"></a>
                     </div>
                 </div>
             </div>
@@ -97,7 +105,7 @@
                 </div>
                 <div class="subscribe">
                     <input type="text" placeholder="Your email address..." name="subscribe" />
-                    <button>Subscribe</button>
+                    <button class="button">Subscribe</button>
                 </div>
             </div>
         </div>
