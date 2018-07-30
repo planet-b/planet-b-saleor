@@ -152,7 +152,6 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -217,7 +216,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'impersonate',
     'phonenumber_field',
-    'corsheaders']
+    ]
 if DEBUG:
     MIDDLEWARE.append(
         'debug_toolbar.middleware.DebugToolbarMiddleware')
@@ -282,8 +281,6 @@ ACCOUNT_ACTIVATION_DAYS = 3
 LOGIN_REDIRECT_URL = 'home'
 
 GOOGLE_ANALYTICS_TRACKING_ID = os.environ.get('GOOGLE_ANALYTICS_TRACKING_ID')
-
-CORS_ORIGIN_ALLOW_ALL = True
 
 
 def get_host():
@@ -473,8 +470,3 @@ ALLOWED_STYLES = ['text-align']
 
 # slugs for menus used in storefront's base template, created by default
 DEFAULT_MENUS = ['navbar', 'footer']
-
-# Configure Django App for Heroku.
-if os.environ.get('DJANGO_HEROKU', False):
-    import django_heroku
-    django_heroku.settings(locals())
