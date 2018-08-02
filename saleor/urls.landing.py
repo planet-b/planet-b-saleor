@@ -23,7 +23,7 @@ from .search.urls import urlpatterns as search_urls
 handler404 = 'saleor.core.views.handle_404'
 
 urlpatterns = [
-    url(r'^$', include('landing.urls'))]
+    url(r'^.*', include('landing.urls'))]
 
 if settings.DEBUG:
     import debug_toolbar
@@ -32,7 +32,3 @@ if settings.DEBUG:
         # static files (images, css, javascript, etc.)
         url(r'^static/(?P<path>.*)$', serve)] + static(
             settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-if settings.ENABLE_SILK:
-    urlpatterns += [
-        url(r'^silk/', include('silk.urls', namespace='silk'))]
