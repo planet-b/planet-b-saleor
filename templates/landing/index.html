@@ -14,11 +14,13 @@
             background-size: cover;
             height: 100%;
             margin: 0;
-            color: #BFBFBF;
+            color: #cecece;
+            font-family: 'Open Sans', sans-serif;
         }
         .container {
-            margin-left: 40%;
+            margin-left: 47%;
             margin-right: 5%;
+            padding-top: 75px;
         }
         .large-logo > svg {
             width: 50%;
@@ -35,6 +37,7 @@
             font-weight: 900;
             color: #E6E617;
             font-size: 1.6rem;
+            font-family: 'Roboto', sans-serif;
         }
         .social-media {
             display: flex;
@@ -43,13 +46,33 @@
             margin-left: 5%;
         }
         .follow,
+        .innovate,
+        .join-us .intro {
+            padding: 1rem 0 1rem 0;
+        }
+        .follow,
         .join-us .intro {
             font-weight: bold;
         }
-        button {
+        button,
+        .subscribe input {
+            padding: 0;
+            border: 2px solid #F2F2F2;
             border-radius: 2px;
-            background: #ccc;
-            border: 2px solid #ccc;
+        }
+        button {
+            background: #F2F2F2;
+            color: #092959;
+            padding: 0.3rem;
+        }
+        .subscribe input {
+            width: 50%;
+            background: rgba(255,255,255,0.1);
+            margin-right: 0.5rem;
+            padding-left: 1rem;
+            border-radius: 3px;
+            color: white;
+            height: 1.6rem;
         }
       </style>
 
@@ -61,7 +84,8 @@
       {% endblock meta %}
 
       {% include 'favicon.html' %}
-
+      <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
     </head>
 
     <body>
@@ -86,7 +110,7 @@
                 The Planet B Team
             </div>
             <div class="follow">
-                Follow us on
+                Follow us
                 <div class="social-media">
                     <div class="social-media-item">
                         <a href=""><img src="{% static "images/planetB_splash_social_facebook.svg" %}" class="social-button-logo"></a>
