@@ -17,7 +17,7 @@
     "npm": "^5.4.2"
   },
   "dependencies": {
-    "bootstrap": "4.0.0",
+    "bootstrap": "4.3.1",
     "classnames": "^2.2.5",
     "detect-passive-events": "^1.0.4",
     "dropzone": "^5.2.0",
